@@ -1,3 +1,4 @@
+import "./load-env";
 import { eq } from "drizzle-orm";
 import { createDb } from "@/lib/db";
 import { permissions, rolePermissions, roles } from "@/lib/db/schema";

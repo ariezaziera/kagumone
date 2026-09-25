@@ -1,3 +1,4 @@
+import "./load-env";
 import { createSignupAuth } from "@/lib/auth/signup";
 import { createDb } from "@/lib/db";
 import {

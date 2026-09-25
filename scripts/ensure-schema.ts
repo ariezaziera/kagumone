@@ -1,3 +1,4 @@
+import "./load-env";
 import { createClient } from "@libsql/client";
 
 const needed: Record<string, { name: string; sql: string }[]> = {
