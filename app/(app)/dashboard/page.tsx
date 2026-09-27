@@ -1,6 +1,6 @@
 import { getAuthContext } from "@/lib/auth/context";
 import { dashboardData } from "@/lib/queries";
-import { Badge, Card, EmptyState, statusTone } from "@/components/ui";
+import { Badge, BrandWordmark, Card, EmptyState, statusTone } from "@/components/ui";
 import { Illustration } from "@/components/illustrations";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -47,7 +47,9 @@ export default async function DashboardPage() {
       <section className="kagum-hero mb-6 rounded-[22px] border border-border px-5 py-5 shadow-[var(--shadow-card)] sm:px-6">
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">KAGUM ONE</p>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em]">
+              <BrandWordmark />
+            </p>
             <h1 className="mt-1 text-2xl font-bold leading-snug sm:text-[30px]">
               {greeting()}, {name}
             </h1>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import { DndContext, useDraggable, useDroppable, type DragEndEvent } from "@dnd-kit/core";
 import { TASK_STATUSES, canTransitionTask, type TaskStatus } from "@/lib/permissions";
 import { Badge, Card, statusTone } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { transitionTask } from "@/lib/actions/core";
 import { useRouter } from "next/navigation";
 import { CSS } from "@dnd-kit/utilities";
@@ -32,7 +32,7 @@ export function KanbanBoard({ tasks }: { tasks: CardTask[] }) {
   }
   return (
     <DndContext onDragEnd={onDragEnd}>
-      <div className="grid gap-3 overflow-x-auto md:grid-cols-3 xl:grid-cols-6">
+      <div className="flex snap-x gap-3 overflow-x-auto pb-2 md:grid md:grid-cols-3 md:overflow-visible xl:grid-cols-6">
         {TASK_STATUSES.map((status) => (
           <Column key={status} status={status} tasks={tasks.filter((t) => t.status === status)} />
         ))}
@@ -44,7 +44,7 @@ export function KanbanBoard({ tasks }: { tasks: CardTask[] }) {
 function Column({ status, tasks }: { status: string; tasks: CardTask[] }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
   return (
-    <Card className={isOver ? "ring-2 ring-info" : ""}>
+    <Card className={cn("w-64 shrink-0 snap-start md:w-auto", isOver && "ring-2 ring-info")}>
       <h2 className="mb-2 text-sm font-medium capitalize">{status.replaceAll("_", " ")}</h2>
       <div ref={setNodeRef} className="min-h-24 space-y-2">
         {tasks.map((t) => (

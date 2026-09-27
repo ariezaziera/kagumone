@@ -81,13 +81,21 @@ export function Card({
   );
 }
 
+export function BrandWordmark({ className }: { className?: string }) {
+  return (
+    <span className={cn("font-bold", className)}>
+      <span className="text-text">KAGUM</span> <span className="text-primary">ONE</span>
+    </span>
+  );
+}
+
 export function PageHeader({
   title,
   description,
   actions,
   module = "workspace",
 }: {
-  title: string;
+  title: React.ReactNode;
   description?: string;
   actions?: React.ReactNode;
   module?: ModuleKey;
@@ -101,7 +109,13 @@ export function PageHeader({
           <Icon size={20} aria-hidden />
         </span>
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{theme.label}</p>
+          {theme.label === "KAGUM ONE" ? (
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em]">
+              <BrandWordmark />
+            </p>
+          ) : (
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{theme.label}</p>
+          )}
           <h1 className="text-2xl font-bold leading-snug text-text sm:text-[28px]">{title}</h1>
           {description ? <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-secondary">{description}</p> : null}
         </div>
@@ -277,7 +291,7 @@ export function EmptyState({
 export function Table({ children }: { children: React.ReactNode }) {
   return (
     <div className="kagum-table overflow-x-auto">
-      <table className="min-w-full text-left text-[13px]">{children}</table>
+      <table className="min-w-[36rem] text-left text-[13px]">{children}</table>
     </div>
   );
 }

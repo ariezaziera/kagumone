@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -36,7 +37,7 @@ import {
 import { NAV_GROUPS, MOBILE_NAV, navItemIsActive, type NavGroup } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
-import { Button } from "@/components/ui";
+import { BrandWordmark, Button } from "@/components/ui";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
@@ -175,6 +176,20 @@ export function AppShell({
   const can = (perm?: string) => !perm || permissions.includes(perm);
   const initial = personName.trim().charAt(0).toUpperCase() || "K";
 
+  useEffect(() => {
+    setOpen(false);
+  }, [pathname]);
+
+  function signOut() {
+    void authClient.signOut({
+      fetchOptions: {
+        onSuccess: () => {
+          window.location.href = "/login";
+        },
+      },
+    });
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {isDev ? (
@@ -195,10 +210,10 @@ export function AppShell({
         >
           <div className="flex items-center justify-between gap-2 px-3 py-4">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-primary text-sm font-bold text-white">K</span>
+              <Image src="/kagum-mark.png" alt="" width={40} height={40} className="h-10 w-10 shrink-0 object-contain" />
               <span className={cn("truncate", collapsed && "lg:hidden")}>
-                <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-muted">KAGUM</span>
-                <span className="block text-sm font-bold text-text">ONE</span>
+                <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-text">KAGUM</span>
+                <span className="block text-sm font-bold text-primary">ONE</span>
               </span>
             </Link>
             <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu">
@@ -210,6 +225,15 @@ export function AppShell({
               <SidebarGroup key={group.id} group={group} pathname={pathname} can={can} compact={collapsed} />
             ))}
           </nav>
+          <div className="border-t border-border p-3 lg:hidden">
+            <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-text">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-charcoal text-xs font-bold text-white">{initial}</span>
+              <span className="truncate">{personName}</span>
+            </p>
+            <Button variant="secondary" className="mt-3 w-full" onClick={signOut}>
+              Sign out
+            </Button>
+          </div>
           <button
             type="button"
             className="m-3 hidden items-center gap-2 rounded-[12px] px-2 py-2 text-sm text-secondary hover:bg-canvas lg:flex"
@@ -221,20 +245,25 @@ export function AppShell({
           </button>
         </aside>
         <div className="min-h-screen min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur-sm">
+          <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-surface/95 px-3 py-2.5 backdrop-blur-sm sm:gap-3 sm:px-4 sm:py-3">
             <button className="rounded-[12px] p-1 text-charcoal lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
               <Menu size={18} />
             </button>
-            <p className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium text-text">
+            <Link href="/dashboard" className="flex min-w-0 items-center gap-2 lg:hidden">
+              <Image src="/kagum-mark.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 object-contain" />
+              <BrandWordmark className="whitespace-nowrap text-[13px] leading-none sm:text-sm" />
+            </Link>
+            <p className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-medium text-text lg:flex">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-charcoal text-xs font-bold text-white">{initial}</span>
               <span className="truncate">{personName}</span>
             </p>
+            <div className="ml-auto flex items-center gap-1">
             <Link href="/notifications" aria-label="Notifications" className="rounded-[12px] p-2 text-charcoal hover:bg-primary-light">
               <Bell size={18} />
             </Link>
             <details className="relative">
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-[12px] bg-primary px-3 py-1.5 text-sm font-semibold text-white">
-                <Plus size={14} /> New
+              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-[12px] bg-primary px-2.5 py-1.5 text-sm font-semibold text-white sm:px-3">
+                <Plus size={14} /> <span className="hidden sm:inline">New</span>
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-52 rounded-[16px] border border-border bg-surface p-2 text-sm shadow-[var(--shadow-lift)]">
                 {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/tasks">Create Task</Link> : null}
@@ -244,25 +273,15 @@ export function AppShell({
                 {can("equipment:borrow") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/equipment">Borrow Equipment</Link> : null}
               </div>
             </details>
-            <Button
-              variant="ghost"
-              onClick={() => {
-                void authClient.signOut({
-                  fetchOptions: {
-                    onSuccess: () => {
-                      window.location.href = "/login";
-                    },
-                  },
-                });
-              }}
-            >
+            <Button variant="ghost" className="hidden lg:inline-flex" onClick={signOut}>
               Sign out
             </Button>
+            </div>
           </header>
-          <main className="px-4 py-6 pb-24 lg:px-8">{children}</main>
+          <main className="px-4 py-5 pb-28 lg:px-8 lg:py-6 lg:pb-6">{children}</main>
         </div>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface pb-[max(0.35rem,env(safe-area-inset-bottom))] lg:hidden">
         {MOBILE_NAV.map((item) => {
           const Icon = MOBILE_ICONS[item.href] ?? Menu;
           const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);

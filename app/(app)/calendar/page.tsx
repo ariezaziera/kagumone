@@ -197,7 +197,7 @@ export default async function CalendarPage({
       />
 
       <div className="grid items-start gap-4 lg:grid-cols-[272px_minmax(0,1fr)]">
-        <aside className="space-y-4 lg:sticky lg:top-20">
+        <aside className="order-2 space-y-4 lg:sticky lg:top-20 lg:order-1">
           <Card className="p-3">
             <div className="mb-2 flex items-center justify-between px-1">
               <p className="text-sm font-semibold">{new Intl.DateTimeFormat("en-MY", { month: "long", year: "numeric", timeZone: "Asia/Kuala_Lumpur" }).format(selectedDate)}</p>
@@ -276,7 +276,7 @@ export default async function CalendarPage({
           </Card>
         </aside>
 
-        <div className="min-w-0 space-y-4">
+        <div className="order-1 min-w-0 space-y-4 lg:order-2">
           {view === "month" ? (
             <Card className="p-3 sm:p-4">
               <div className="grid grid-cols-7 gap-1 text-center text-xs font-medium text-secondary">

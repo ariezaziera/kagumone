@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { askAssistant } from "@/lib/actions/auth-extra";
-import { Button, Card, PageHeader, Textarea } from "@/components/ui";
+import { BrandWordmark, Button, Card, PageHeader, Textarea } from "@/components/ui";
 import { Illustration } from "@/components/illustrations";
 
 const PROMPTS = ["Summarise my workload", "Find overdue work", "Summarise this project", "Find related records"];
@@ -14,7 +14,15 @@ export default function AiPage() {
   const [labels, setLabels] = useState<Record<string, string> | null>(null);
   return (
     <div>
-      <PageHeader module="ai" title="KAGUM ONE Assistant" description="Assistive only. Suggestions require human confirmation and normal authorization." />
+      <PageHeader
+        module="ai"
+        title={
+          <>
+            <BrandWordmark /> Assistant
+          </>
+        }
+        description="Assistive only. Suggestions require human confirmation and normal authorization."
+      />
       <Card accent="purple" className="mb-4">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
           <Illustration name="ai" className="h-24 w-40 shrink-0" />
