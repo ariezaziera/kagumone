@@ -334,7 +334,7 @@ export default async function CalendarPage({
                 {dayDeadlines.length ? (
                 <RecordGroup id="deadlines" title="Deadlines" tone="text-error">
                   {dayDeadlines.map((t) => (
-                    <Link key={t.id} href={`/tasks/${t.id}`} className="block rounded-full bg-error-soft px-4 py-2 text-sm">
+                    <Link key={t.id} href={`/tasks/${t.id}`} className="block rounded-[12px] bg-error-soft px-4 py-2 text-sm">
                       <span className="font-semibold text-error">{t.title}</span>
                       <span className="mt-0.5 block text-xs text-secondary">{formatDateTime(t.officialDeadline)}</span>
                     </Link>
@@ -344,7 +344,7 @@ export default async function CalendarPage({
                 {plannedDay.length ? (
                 <RecordGroup id="planned" title="Planned Work" tone="text-info">
                   {plannedDay.map((p) => (
-                    <div key={p.id} className="rounded-[22px] border border-info/30 bg-info-soft px-4 py-2.5 text-sm">
+                    <div key={p.id} className="rounded-[12px] border border-info/30 bg-info-soft px-4 py-2.5 text-sm">
                       <Link className="font-semibold text-info" href={p.taskId ? `/tasks/${p.taskId}` : p.contentId ? `/content/${p.contentId}` : p.projectId ? `/projects/${p.projectId}` : "/calendar"}>
                         {p.title || p.workType}
                       </Link>
@@ -375,7 +375,7 @@ export default async function CalendarPage({
                 {eventsDay.length ? (
                 <RecordGroup id="events" title="Events / Coverage" tone="text-orange">
                   {eventsDay.map((e) => (
-                    <div key={e.id} className="rounded-full bg-orange-soft px-4 py-2 text-sm">
+                    <div key={e.id} className="rounded-[12px] bg-orange-soft px-4 py-2 text-sm">
                       <span className="font-semibold text-orange">{e.title}</span>
                       <span className="mt-0.5 block text-xs text-secondary">{formatDateTime(e.startAt)}</span>
                     </div>
@@ -385,7 +385,7 @@ export default async function CalendarPage({
                 {pubsDay.length ? (
                 <RecordGroup id="content" title="Content" tone="text-purple">
                   {pubsDay.map((c) => (
-                    <Link key={c.id} href={`/content/${c.id}`} className="block rounded-full bg-purple-soft px-4 py-2 text-sm font-semibold text-purple">
+                    <Link key={c.id} href={`/content/${c.id}`} className="block rounded-[12px] bg-purple-soft px-4 py-2 text-sm font-semibold text-purple">
                       {c.title}
                     </Link>
                   ))}
@@ -394,7 +394,7 @@ export default async function CalendarPage({
                 {logsDay.length ? (
                 <RecordGroup id="actual" title="Actual Work" tone="text-success">
                   {logsDay.map((e) => (
-                    <div key={e.id} className="rounded-full bg-success-soft px-4 py-2 text-sm text-success">
+                    <div key={e.id} className="rounded-[12px] bg-success-soft px-4 py-2 text-sm text-success">
                       <span className="font-semibold">{e.actualMinutes} actual minutes</span>
                       {e.taskId ? (
                         <Link className="mt-0.5 block text-xs font-semibold text-info" href={`/tasks/${e.taskId}`}>

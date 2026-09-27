@@ -31,7 +31,7 @@ export default async function SkillsPage() {
             const peopleCount = assigned.filter((a) => a.skillId === s.id).length;
             const evidenceCount = evidence.filter((e) => assigned.some((a) => a.id === e.personSkillId && a.skillId === s.id)).length;
             return (
-              <Card key={s.id} className="rounded-[24px]">
+              <Card key={s.id}>
                 <Link className="font-medium text-info" href={`/skills/${s.id}`}>
                   {s.name}
                 </Link>

@@ -12,7 +12,7 @@ export default async function HandoverPage() {
         <EmptyState title="No handovers" body="Start a handover when responsibility changes." />
       ) : (
         rows.map((h) => (
-          <Card key={h.id} className="mb-2 rounded-[24px]">
+          <Card key={h.id} className="mb-2">
             <p>
               Outgoing {peopleRows.find((p) => p.id === h.outgoingPersonId)?.fullName} →{" "}
               {peopleRows.find((p) => p.id === h.incomingPersonId)?.fullName ?? "unassigned"}

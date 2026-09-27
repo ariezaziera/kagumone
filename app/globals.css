@@ -151,7 +151,7 @@ tbody tr:hover {
 .kagum-list > div {
   border: 1px solid var(--border);
   background: var(--canvas);
-  border-radius: 999px;
+  border-radius: 12px;
   padding: 0.6rem 1rem;
   line-height: 1.5;
 }
@@ -180,20 +180,20 @@ tbody tr:hover {
 
 .kagum-table tbody td:first-child {
   border-left: 1px solid var(--border);
-  border-top-left-radius: 999px;
-  border-bottom-left-radius: 999px;
+  border-top-left-radius: 12px;
+  border-bottom-left-radius: 12px;
   padding-left: 1rem;
 }
 
 .kagum-table tbody td:last-child {
   border-right: 1px solid var(--border);
-  border-top-right-radius: 999px;
-  border-bottom-right-radius: 999px;
+  border-top-right-radius: 12px;
+  border-bottom-right-radius: 12px;
   padding-right: 1rem;
 }
 
 .kagum-table tbody td:first-child:last-child {
-  border-radius: 999px;
+  border-radius: 12px;
 }
 
 .kagum-table tbody tr:hover td {

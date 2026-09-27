@@ -19,7 +19,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ id
       {assigned.map((a) => {
         const notes = evidence.filter((e) => e.personSkillId === a.id);
         return (
-          <Card key={a.id} className="mb-2 rounded-[24px]">
+          <Card key={a.id} className="mb-2">
             <p>
               {peopleRows.find((p) => p.id === a.personId)?.fullName} — Level {a.level}{" "}
               {a.verified ? "(verified)" : "(inferred from work)"}

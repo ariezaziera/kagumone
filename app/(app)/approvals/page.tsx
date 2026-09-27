@@ -30,7 +30,7 @@ export default async function ApprovalsPage() {
         />
       ) : (
         pending.map((a) => (
-          <Card key={a.id} className="mb-3 rounded-[24px]">
+          <Card key={a.id} className="mb-3">
             <p className="font-medium">
               {a.type} <Badge tone={statusTone(a.status)}>{a.status}</Badge>
             </p>

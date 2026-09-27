@@ -27,7 +27,7 @@ export default async function KpiPage() {
           const period = periods.find((p) => p.id === t.periodId);
           const person = peopleRows.find((p) => p.id === t.personId);
           return (
-            <Card key={t.id} className="rounded-[24px]">
+            <Card key={t.id}>
               <p className="font-medium">{person?.fullName}</p>
               <p className="text-sm text-secondary">
                 {t.category} · {period?.name} · target {t.targetValue} {t.unit}

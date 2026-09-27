@@ -197,7 +197,7 @@ export function Badge({
     pink: "bg-pink-soft text-pink",
   };
   const label = typeof children === "string" ? children.replaceAll("_", " ") : children;
-  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold leading-normal capitalize", map[tone])}>{label}</span>;
+  return <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-normal capitalize", map[tone])}>{label}</span>;
 }
 
 const STATUS_TONES: Record<string, BadgeTone> = {

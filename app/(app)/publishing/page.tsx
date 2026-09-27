@@ -15,7 +15,7 @@ export default async function PublishingPage() {
         <EmptyState title="Nothing ready to post" body="Content must complete QC and final approval first." />
       ) : (
         ready.map((c) => (
-          <Card key={c.id} className="mb-3 rounded-[24px]">
+          <Card key={c.id} className="mb-3">
             <h2 className="font-medium">{c.title}</h2>
             <ActionForm action={publishContent} submitLabel="Record publication">
               <input type="hidden" name="contentId" value={c.id} />

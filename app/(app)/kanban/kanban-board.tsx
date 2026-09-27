@@ -61,7 +61,7 @@ function KanbanCard({ task }: { task: CardTask }) {
     <div
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
-      className="rounded-full border border-border bg-canvas px-3 py-2.5 text-sm"
+      className="rounded-[12px] border border-border bg-canvas px-3 py-2.5 text-sm"
       {...listeners}
       {...attributes}
     >

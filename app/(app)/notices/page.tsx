@@ -24,7 +24,7 @@ export default async function NoticesPage() {
             <EmptyState title="No notices yet" body="Posted event notices and participation requests will appear on the dashboard carousel." />
           ) : (
             rows.map((n) => (
-              <Card key={n.id} className="mb-3 rounded-[24px]">
+              <Card key={n.id} className="mb-3">
                 <p className="text-xs uppercase text-info">{n.kind.replaceAll("_", " ")}</p>
                 <p className="font-medium">{n.title}</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{n.body}</p>
