@@ -67,7 +67,7 @@ function Prop({ name, accent }: { name: IllustrationName; accent: string }) {
   }
   if (name === "quiet") {
     return (
-      <text x="112" y="46" fill="#8A8A8A" fontSize="16" fontFamily="Inter, sans-serif">
+      <text x="112" y="46" fill="#8A8A8A" fontSize="16" fontFamily="Montserrat, sans-serif">
         z z
       </text>
     );

@@ -43,7 +43,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           </p>
           <p className="text-sm">Health (defined signal): {health}</p>
           <h3 className="pt-2 font-medium">Phases</h3>
-          <ol className="list-decimal pl-5 text-sm">
+          <ol className="kagum-list text-sm">
             {phases.map((p) => (
               <li key={p.id}>
                 {p.name} — {p.status}
@@ -75,7 +75,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">
         <Card>
           <h2 className="mb-2 font-medium">Members</h2>
-          <ul className="mb-3 text-sm">
+          <ul className="kagum-list mb-3 text-sm">
             {members.map((m) => (
               <li key={m.id}>{peopleRows.find((p) => p.id === m.personId)?.fullName ?? m.personId}</li>
             ))}
@@ -93,7 +93,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">Related tasks</h2>
-          <ul className="text-sm">
+          <ul className="kagum-list text-sm">
             {relatedTasks.map((t) => (
               <li key={t.id}>
                 <Link className="text-info" href={`/tasks/${t.id}`}>
@@ -106,7 +106,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">Related content</h2>
-          <ul className="text-sm">
+          <ul className="kagum-list text-sm">
             {relatedContent.map((c) => (
               <li key={c.id}>
                 <Link className="text-info" href={`/content/${c.id}`}>
@@ -118,7 +118,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">History</h2>
-          <ul className="text-sm text-secondary">
+          <ul className="kagum-list text-sm text-secondary">
             {history.map((h) => (
               <li key={h.id}>
                 {h.field}: {h.previousValue} → {h.newValue}

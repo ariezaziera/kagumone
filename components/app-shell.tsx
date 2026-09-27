@@ -270,7 +270,7 @@ export function AppShell({
             <Link
               key={item.href}
               href={item.href}
-              className={cn("flex flex-col items-center gap-0.5 px-1 py-2 text-center text-[10px] font-medium leading-tight", active ? "text-primary" : "text-secondary")}
+              className={cn("flex flex-col items-center gap-1 px-1 py-2 text-center text-[10px] font-medium leading-snug", active ? "text-primary" : "text-secondary")}
             >
               <Icon size={18} aria-hidden />
               {item.label}

@@ -46,7 +46,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         <EmptyState title="All quiet here" body="You don't have any new notifications." illustration="quiet" />
       ) : (
         filtered.map((n) => (
-          <Card key={n.id} className="mb-2">
+          <Card key={n.id} className="mb-2 rounded-[24px]">
             <Link href={n.href || "#"} className="font-medium text-info">
               {n.title}
             </Link>

@@ -27,10 +27,13 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
           <p>Last working day: {formatDate(person.lastWorkingDay)}</p>
           <p>Email: {person.email}</p>
           <h3 className="pt-2 font-medium">Reports to</h3>
+          <div className="kagum-list">
           {reporting.map((r) => (
             <p key={r.id}>{r.superiorId}</p>
           ))}
+          </div>
           <h3 className="pt-2 font-medium">Tasks</h3>
+          <div className="kagum-list">
           {assigned.map((t) => (
             <p key={t.id}>
               <Link className="text-info" href={`/tasks/${t.id}`}>
@@ -38,12 +41,15 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
               </Link>
             </p>
           ))}
+          </div>
           <h3 className="pt-2 font-medium">Skills</h3>
+          <div className="kagum-list">
           {personSkillRows.map((s) => (
             <p key={s.id}>
               {skillRows.find((x) => x.id === s.skillId)?.name} · level {s.level}
             </p>
           ))}
+          </div>
         </Card>
         <Card>
           <ActionForm action={setLastWorkingDay} submitLabel="Update last working day">

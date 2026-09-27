@@ -88,7 +88,14 @@
   --color-purple-soft: var(--purple-soft);
   --color-pink-soft: var(--pink-soft);
   --color-charcoal-soft: var(--charcoal-soft);
-  --font-sans: var(--font-inter);
+  --font-sans: var(--font-montserrat);
+  --text-xs--line-height: 1.5;
+  --text-sm--line-height: 1.55;
+  --text-base--line-height: 1.65;
+  --text-lg--line-height: 1.5;
+  --text-xl--line-height: 1.45;
+  --text-2xl--line-height: 1.35;
+  --text-3xl--line-height: 1.3;
   --radius-card: var(--radius-card);
   --radius-control: var(--radius-control);
 }
@@ -97,7 +104,19 @@ html,
 body {
   background: var(--background);
   color: var(--text);
-  font-family: var(--font-inter), Inter, system-ui, sans-serif;
+  font-family: var(--font-montserrat), Montserrat, system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: Surgena, var(--font-montserrat), Montserrat, system-ui, sans-serif;
+  line-height: 1.35;
+  letter-spacing: 0.01em;
 }
 
 *:focus-visible {
@@ -114,6 +133,70 @@ tbody tr {
 }
 
 tbody tr:hover {
+  background: #fafafa;
+}
+
+.kagum-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kagum-list > li,
+.kagum-list > p,
+.kagum-list > a,
+.kagum-list > div {
+  border: 1px solid var(--border);
+  background: var(--canvas);
+  border-radius: 999px;
+  padding: 0.6rem 1rem;
+  line-height: 1.5;
+}
+
+.kagum-table thead {
+  background: transparent;
+}
+
+.kagum-table table {
+  border-collapse: separate;
+  border-spacing: 0 0.5rem;
+}
+
+.kagum-table tbody tr,
+.kagum-table tbody tr:hover {
+  background: transparent;
+}
+
+.kagum-table tbody td {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  padding: 0.7rem 0.85rem;
+  line-height: 1.5;
+}
+
+.kagum-table tbody td:first-child {
+  border-left: 1px solid var(--border);
+  border-top-left-radius: 999px;
+  border-bottom-left-radius: 999px;
+  padding-left: 1rem;
+}
+
+.kagum-table tbody td:last-child {
+  border-right: 1px solid var(--border);
+  border-top-right-radius: 999px;
+  border-bottom-right-radius: 999px;
+  padding-right: 1rem;
+}
+
+.kagum-table tbody td:first-child:last-child {
+  border-radius: 999px;
+}
+
+.kagum-table tbody tr:hover td {
   background: #fafafa;
 }
 

@@ -102,8 +102,8 @@ export function PageHeader({
         </span>
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{theme.label}</p>
-          <h1 className="text-2xl font-bold tracking-tight text-text sm:text-[28px]">{title}</h1>
-          {description ? <p className="mt-1 max-w-2xl text-sm text-secondary">{description}</p> : null}
+          <h1 className="text-2xl font-bold leading-snug text-text sm:text-[28px]">{title}</h1>
+          {description ? <p className="mt-1.5 max-w-2xl text-sm leading-relaxed text-secondary">{description}</p> : null}
         </div>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
@@ -183,7 +183,7 @@ export function Badge({
     pink: "bg-pink-soft text-pink",
   };
   const label = typeof children === "string" ? children.replaceAll("_", " ") : children;
-  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize", map[tone])}>{label}</span>;
+  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold leading-normal capitalize", map[tone])}>{label}</span>;
 }
 
 const STATUS_TONES: Record<string, BadgeTone> = {
@@ -266,7 +266,7 @@ export function EmptyState({
     <>
       {art ? <Illustration name={art} className="mb-3 h-24 w-36" /> : null}
       <p className="text-base font-semibold text-text">{title}</p>
-      <p className="mt-1 max-w-md text-sm text-secondary">{body}</p>
+      <p className="mt-1.5 max-w-md text-sm leading-relaxed text-secondary">{body}</p>
       {action ? <div className="mt-4">{action}</div> : null}
     </>
   );
@@ -276,7 +276,7 @@ export function EmptyState({
 
 export function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
+    <div className="kagum-table overflow-x-auto">
       <table className="min-w-full text-left text-[13px]">{children}</table>
     </div>
   );

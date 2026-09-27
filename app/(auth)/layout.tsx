@@ -7,7 +7,7 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
             <span className="flex h-11 w-11 items-center justify-center rounded-[14px] bg-primary text-lg font-bold text-white">K</span>
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted">KAGUM Advance Group</p>
-              <h1 className="text-2xl font-bold tracking-tight text-text">KAGUM ONE</h1>
+              <h1 className="text-2xl font-bold leading-snug text-text">KAGUM ONE</h1>
             </div>
           </div>
           {children}

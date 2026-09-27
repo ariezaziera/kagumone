@@ -129,6 +129,27 @@ export default async function CalendarPage({
     };
   }
 
+  function linesFor(dateStr: string) {
+    const items: MonthLine[] = [
+      ...monthDeadlines
+        .filter((task) => task.officialDeadline && ymd(task.officialDeadline) === dateStr)
+        .map((task) => monthLine(task.id, briefTitle(task.title), "deadlines")),
+      ...monthEvents
+        .filter((event) => event.startAt && ymd(event.startAt) === dateStr)
+        .map((event) => monthLine(event.id, briefTitle(event.title), "events")),
+      ...plannedMonth
+        .filter((item) => item.startAt && ymd(item.startAt) === dateStr)
+        .map((item) => monthLine(item.id, briefTitle(item.title || item.workType), "planned")),
+      ...contentRows
+        .filter((item) => item.plannedPublishAt && ymd(item.plannedPublishAt) === dateStr)
+        .map((item) => monthLine(item.id, briefTitle(item.title), "content")),
+      ...logs
+        .filter((entry) => entry.workDate === dateStr)
+        .map((entry) => monthLine(entry.id, "Time log", "actual")),
+    ];
+    return { shown: items.slice(0, 4), extra: Math.max(0, items.length - 4) };
+  }
+
   const summary = [
     { key: "deadlines", count: dayDeadlines.length },
     { key: "planned", count: plannedDay.length },
@@ -225,12 +246,12 @@ export default async function CalendarPage({
           <Card accent="orange">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Selected date</p>
             <p className="mt-1 text-base font-bold">{selectedLabel}</p>
-            <ul className="mt-3 space-y-1.5">
+            <ul className="kagum-list mt-3">
               {summary.map((item) => {
                 const mark = MARKS.find((entry) => entry.key === item.key)!;
                 return (
                   <li key={item.key}>
-                    <a href={`#${item.key}`} className="flex items-center justify-between rounded-[12px] px-2 py-1.5 text-sm hover:bg-canvas">
+                    <a href={`#${item.key}`} className="flex items-center justify-between gap-3 text-sm">
                       <span className="flex items-center gap-2">
                         <span className={cn("h-2 w-2 rounded-full", mark.dot)} />
                         {mark.label}
@@ -245,7 +266,7 @@ export default async function CalendarPage({
 
           <Card>
             <h2 className="mb-2 text-sm font-semibold">Legend</h2>
-            <ul className="space-y-2 text-sm">
+            <ul className="kagum-list text-sm">
               <li className="text-error">Official Deadline — authoritative due date on the task.</li>
               <li className="text-info">Planned Working Time — when you intend to work. Moving this does not move the deadline or owner.</li>
               <li className="text-success">Actual Work / Completion Record — timestamps from completion and time logs.</li>
@@ -269,7 +290,7 @@ export default async function CalendarPage({
                   const day = index + 1;
                   const dateStr = `${selectedDate.getFullYear()}-${pad(selectedDate.getMonth() + 1)}-${pad(day)}`;
                   return (
-                    <DayCell key={dateStr} dateStr={dateStr} day={day} selected={dateStr === selected} marks={marksFor(dateStr)} />
+                    <DayCell key={dateStr} dateStr={dateStr} day={day} selected={dateStr === selected} lines={linesFor(dateStr)} />
                   );
                 })}
               </div>
@@ -295,9 +316,17 @@ export default async function CalendarPage({
             </div>
           ) : null}
 
+          {view === "day" ? (
+            <DayTimeline deadlines={dayDeadlines} planned={plannedDay} events={eventsDay} content={pubsDay} />
+          ) : null}
+
           <Card>
             <h2 className="text-lg font-bold">Records on {selected}</h2>
-            <p className="mb-4 text-xs text-secondary">This is the date detail, not an empty hourly grid.</p>
+            <p className="mb-4 text-xs text-secondary">
+              {view === "day"
+                ? "Timed records are blocked on the clock above. This list keeps the full record, including actual minutes that have no start time."
+                : "This is the date detail, not an empty hourly grid."}
+            </p>
             {!dayDeadlines.length && !plannedDay.length && !eventsDay.length && !pubsDay.length && !logsDay.length ? (
               <p className="text-sm text-secondary">No operational records on this date.</p>
             ) : (
@@ -305,7 +334,7 @@ export default async function CalendarPage({
                 {dayDeadlines.length ? (
                 <RecordGroup id="deadlines" title="Deadlines" tone="text-error">
                   {dayDeadlines.map((t) => (
-                    <Link key={t.id} href={`/tasks/${t.id}`} className="block rounded-[14px] bg-error-soft px-3 py-2 text-sm">
+                    <Link key={t.id} href={`/tasks/${t.id}`} className="block rounded-full bg-error-soft px-4 py-2 text-sm">
                       <span className="font-semibold text-error">{t.title}</span>
                       <span className="mt-0.5 block text-xs text-secondary">{formatDateTime(t.officialDeadline)}</span>
                     </Link>
@@ -315,7 +344,7 @@ export default async function CalendarPage({
                 {plannedDay.length ? (
                 <RecordGroup id="planned" title="Planned Work" tone="text-info">
                   {plannedDay.map((p) => (
-                    <div key={p.id} className="rounded-[14px] border border-info/30 bg-info-soft px-3 py-2 text-sm">
+                    <div key={p.id} className="rounded-[22px] border border-info/30 bg-info-soft px-4 py-2.5 text-sm">
                       <Link className="font-semibold text-info" href={p.taskId ? `/tasks/${p.taskId}` : p.contentId ? `/content/${p.contentId}` : p.projectId ? `/projects/${p.projectId}` : "/calendar"}>
                         {p.title || p.workType}
                       </Link>
@@ -346,7 +375,7 @@ export default async function CalendarPage({
                 {eventsDay.length ? (
                 <RecordGroup id="events" title="Events / Coverage" tone="text-orange">
                   {eventsDay.map((e) => (
-                    <div key={e.id} className="rounded-[14px] bg-orange-soft px-3 py-2 text-sm">
+                    <div key={e.id} className="rounded-full bg-orange-soft px-4 py-2 text-sm">
                       <span className="font-semibold text-orange">{e.title}</span>
                       <span className="mt-0.5 block text-xs text-secondary">{formatDateTime(e.startAt)}</span>
                     </div>
@@ -356,7 +385,7 @@ export default async function CalendarPage({
                 {pubsDay.length ? (
                 <RecordGroup id="content" title="Content" tone="text-purple">
                   {pubsDay.map((c) => (
-                    <Link key={c.id} href={`/content/${c.id}`} className="block rounded-[14px] bg-purple-soft px-3 py-2 text-sm font-semibold text-purple">
+                    <Link key={c.id} href={`/content/${c.id}`} className="block rounded-full bg-purple-soft px-4 py-2 text-sm font-semibold text-purple">
                       {c.title}
                     </Link>
                   ))}
@@ -365,7 +394,7 @@ export default async function CalendarPage({
                 {logsDay.length ? (
                 <RecordGroup id="actual" title="Actual Work" tone="text-success">
                   {logsDay.map((e) => (
-                    <div key={e.id} className="rounded-[14px] bg-success-soft px-3 py-2 text-sm text-success">
+                    <div key={e.id} className="rounded-full bg-success-soft px-4 py-2 text-sm text-success">
                       <span className="font-semibold">{e.actualMinutes} actual minutes</span>
                       {e.taskId ? (
                         <Link className="mt-0.5 block text-xs font-semibold text-info" href={`/tasks/${e.taskId}`}>
@@ -385,42 +414,203 @@ export default async function CalendarPage({
   );
 }
 
+function klMinutes(value: Date | string | null | undefined) {
+  if (!value) return null;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone: "Asia/Kuala_Lumpur",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(date);
+  const hour = Number(parts.find((part) => part.type === "hour")?.value ?? "0");
+  const minute = Number(parts.find((part) => part.type === "minute")?.value ?? "0");
+  return (hour === 24 ? 0 : hour) * 60 + minute;
+}
+
+function clockLabel(minutes: number) {
+  return `${pad(Math.floor(minutes / 60) % 24)}:${pad(minutes % 60)}`;
+}
+
+type TimeBlock = {
+  id: string;
+  title: string;
+  href?: string;
+  start: number;
+  end: number;
+  soft: string;
+  text: string;
+  lane: number;
+};
+
+function DayTimeline({
+  deadlines,
+  planned,
+  events,
+  content,
+}: {
+  deadlines: { id: string; title: string; officialDeadline: Date | string | null }[];
+  planned: { id: string; title: string | null; workType: string; startAt: Date | string; endAt: Date | string; taskId: string | null; contentId: string | null; projectId: string | null }[];
+  events: { id: string; title: string; startAt: Date | string; endAt: Date | string | null }[];
+  content: { id: string; title: string; plannedPublishAt: Date | string | null }[];
+}) {
+  const blocks: Omit<TimeBlock, "lane">[] = [];
+  for (const item of planned) {
+    const start = klMinutes(item.startAt);
+    const end = klMinutes(item.endAt);
+    if (start === null || end === null || end <= start) continue;
+    const href = item.taskId ? `/tasks/${item.taskId}` : item.contentId ? `/content/${item.contentId}` : item.projectId ? `/projects/${item.projectId}` : undefined;
+    blocks.push({ id: item.id, title: briefTitle(item.title || item.workType), href, start, end, soft: "bg-info-soft", text: "text-info" });
+  }
+  for (const item of events) {
+    const start = klMinutes(item.startAt);
+    const end = klMinutes(item.endAt) ?? (start === null ? null : start + 60);
+    if (start === null || end === null || end <= start) continue;
+    blocks.push({ id: item.id, title: briefTitle(item.title), start, end, soft: "bg-orange-soft", text: "text-orange" });
+  }
+  for (const item of deadlines) {
+    const start = klMinutes(item.officialDeadline);
+    if (start === null) continue;
+    blocks.push({ id: item.id, title: briefTitle(item.title), href: `/tasks/${item.id}`, start, end: start + 30, soft: "bg-error-soft", text: "text-error" });
+  }
+  for (const item of content) {
+    const start = klMinutes(item.plannedPublishAt);
+    if (start === null) continue;
+    blocks.push({ id: item.id, title: briefTitle(item.title), href: `/content/${item.id}`, start, end: start + 30, soft: "bg-purple-soft", text: "text-purple" });
+  }
+
+  if (blocks.length === 0) return null;
+
+  let gridStart = 8 * 60;
+  let gridEnd = 20 * 60;
+  for (const block of blocks) {
+    gridStart = Math.min(gridStart, Math.floor(block.start / 60) * 60);
+    gridEnd = Math.max(gridEnd, Math.ceil(block.end / 60) * 60);
+  }
+  gridStart = Math.max(0, gridStart);
+  gridEnd = Math.min(24 * 60, Math.max(gridEnd, gridStart + 60));
+  const span = gridEnd - gridStart;
+  const hours = Array.from({ length: span / 60 }, (_, index) => gridStart + index * 60);
+  const laneEnds: number[] = [];
+  const placed: TimeBlock[] = [...blocks]
+    .sort((a, b) => a.start - b.start || a.end - b.end)
+    .map((block) => {
+      let lane = laneEnds.findIndex((end) => end <= block.start);
+      if (lane === -1) {
+        lane = laneEnds.length;
+        laneEnds.push(block.end);
+      } else {
+        laneEnds[lane] = block.end;
+      }
+      return { ...block, lane };
+    });
+  const laneCount = Math.max(1, laneEnds.length);
+
+  return (
+    <Card>
+      <h2 className="text-lg font-bold">Day schedule</h2>
+      <p className="mb-4 text-xs text-secondary">Blocks use the recorded start and end time. A deadline or publish time is a short marker, not a work duration.</p>
+      <div className="relative" style={{ height: hours.length * 64 }}>
+        {hours.map((minutes) => (
+          <div key={minutes} className="flex h-16 border-t border-border">
+            <span className="w-12 shrink-0 pt-1 text-[11px] text-muted">{clockLabel(minutes)}</span>
+            <div className="flex-1 border-l border-border" />
+          </div>
+        ))}
+        <div className="absolute bottom-0 left-12 right-1 top-0">
+          {placed.map((block) => {
+            const top = ((block.start - gridStart) / span) * 100;
+            const height = Math.max(((block.end - block.start) / span) * 100, 6);
+            const width = 100 / laneCount;
+            const body = (
+              <>
+                <span className="block truncate font-semibold">{block.title}</span>
+                <span className="block text-[10px] opacity-80">{clockLabel(block.start)}–{clockLabel(block.end)}</span>
+              </>
+            );
+            const className = cn("absolute overflow-hidden rounded-[10px] px-2 py-1 text-[11px] leading-tight", block.soft, block.text);
+            const style = { top: `${top}%`, height: `${height}%`, left: `calc(${block.lane * width}% + 4px)`, width: `calc(${width}% - 8px)` };
+            return block.href ? (
+              <Link key={block.id} href={block.href} className={className} style={style}>{body}</Link>
+            ) : (
+              <div key={block.id} className={className} style={style}>{body}</div>
+            );
+          })}
+        </div>
+      </div>
+    </Card>
+  );
+}
+
+function briefTitle(value: string) {
+  const cleaned = value
+    .replace(/^Demo:\s*/i, "")
+    .replace(/\s*\(\d{4}-\d{2}-\d{2}\)\s*$/, "")
+    .replace(/^Demo\s+/i, "")
+    .replace(/\s+\d{4}-\d{2}-\d{2}\s*$/, "")
+    .trim();
+  if (!cleaned) return value;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
+type MonthLine = { key: string; title: string; text: string; soft: string; dot: string };
+
+function monthLine(key: string, title: string, kind: (typeof MARKS)[number]["key"]): MonthLine {
+  const mark = MARKS.find((entry) => entry.key === kind)!;
+  return { key, title, text: mark.text, soft: mark.soft, dot: mark.dot };
+}
+
 function DayCell({
   dateStr,
   day,
   weekday,
   selected,
   marks,
+  lines,
   tall = false,
 }: {
   dateStr: string;
   day: number;
   weekday?: string;
   selected: boolean;
-  marks: Record<(typeof MARKS)[number]["key"], number>;
+  marks?: Record<(typeof MARKS)[number]["key"], number>;
+  lines?: { shown: MonthLine[]; extra: number };
   tall?: boolean;
 }) {
   return (
     <Link
       href={`/calendar?view=day&date=${dateStr}`}
       className={cn(
-        "flex flex-col rounded-[14px] border p-2 text-left",
-        tall ? "min-h-36 bg-surface" : "min-h-20",
+        "flex min-w-0 flex-col rounded-[14px] border p-2 text-left",
+        tall ? "min-h-36 bg-surface" : lines ? "min-h-28" : "min-h-20",
         selected ? "border-primary bg-primary-light" : "border-border hover:bg-canvas",
       )}
     >
       {weekday ? <span className="text-[11px] font-semibold uppercase tracking-wide text-muted">{weekday}</span> : null}
       <span className={cn("text-sm font-semibold", selected && "text-primary")}>{day}</span>
-      <span className="mt-1 flex flex-col gap-1">
-        {MARKS.map((mark) =>
-          marks[mark.key] > 0 ? (
-            <span key={mark.key} className={cn("inline-flex w-fit items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", mark.soft, mark.text)}>
-              <span className={cn("h-1.5 w-1.5 rounded-full", mark.dot)} />
-              {marks[mark.key]}
+      {lines ? (
+        <span className="mt-1 flex min-w-0 flex-col gap-1">
+          {lines.shown.map((line) => (
+            <span key={line.key} className={cn("flex min-w-0 items-center gap-1 rounded-md px-1 py-0.5 text-[10px] font-semibold leading-snug", line.soft, line.text)}>
+              <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", line.dot)} />
+              <span className="truncate">{line.title}</span>
             </span>
-          ) : null,
-        )}
-      </span>
+          ))}
+          {lines.extra > 0 ? <span className="text-[10px] font-medium text-muted">+{lines.extra} more</span> : null}
+        </span>
+      ) : (
+        <span className="mt-1 flex flex-col gap-1">
+          {MARKS.map((mark) =>
+            marks && marks[mark.key] > 0 ? (
+              <span key={mark.key} className={cn("inline-flex w-fit items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold", mark.soft, mark.text)}>
+                <span className={cn("h-1.5 w-1.5 rounded-full", mark.dot)} />
+                {marks[mark.key]}
+              </span>
+            ) : null,
+          )}
+        </span>
+      )}
     </Link>
   );
 }

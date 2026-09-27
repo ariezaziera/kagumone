@@ -19,12 +19,12 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ id
       {assigned.map((a) => {
         const notes = evidence.filter((e) => e.personSkillId === a.id);
         return (
-          <Card key={a.id} className="mb-2">
+          <Card key={a.id} className="mb-2 rounded-[24px]">
             <p>
               {peopleRows.find((p) => p.id === a.personId)?.fullName} — Level {a.level}{" "}
               {a.verified ? "(verified)" : "(inferred from work)"}
             </p>
-            <ul className="mt-2 space-y-2 text-sm text-secondary">
+            <ul className="kagum-list mt-2 text-sm text-secondary">
               {notes.map((n) => (
                 <li key={n.id} className="whitespace-pre-wrap">
                   {n.relatedType === "task" && n.relatedId ? (

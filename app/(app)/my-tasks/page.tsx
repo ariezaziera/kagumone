@@ -25,7 +25,7 @@ export default async function MyTasksPage() {
       {overdue.length ? (
         <Card className="mb-4 border-error">
           <h2 className="font-medium text-error">Overdue</h2>
-          <ul className="mt-2 text-sm">
+          <ul className="kagum-list mt-2 text-sm">
             {overdue.map((t) => (
               <li key={t.id}>
                 <Link href={`/tasks/${t.id}`}>{t.title}</Link> — {formatDate(t.officialDeadline)}
@@ -45,25 +45,29 @@ export default async function MyTasksPage() {
               {rows.length === 0 ? (
                 <p className="text-sm text-secondary">No tasks in this state.</p>
               ) : (
-                rows.map((t) => (
-                  <div key={t.id} className="mb-2 flex justify-between text-sm">
+                <div className="kagum-list">
+                {rows.map((t) => (
+                  <div key={t.id} className="flex items-center justify-between gap-3 text-sm">
                     <Link className="text-info" href={`/tasks/${t.id}`}>
                       {t.title}
                     </Link>
                     <Badge tone={statusTone(t.status)}>{formatDate(t.officialDeadline)}</Badge>
                   </div>
-                ))
+                ))}
+                </div>
               )}
             </Card>
           );
         })}
         <Card>
           <h2 className="mb-2 font-medium">Today / acknowledged</h2>
+          <div className="kagum-list">
           {today.map((t) => (
             <p key={t.id} className="text-sm">
               <Link href={`/tasks/${t.id}`}>{t.title}</Link>
             </p>
           ))}
+          </div>
         </Card>
       </div>
     </div>

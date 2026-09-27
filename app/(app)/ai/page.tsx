@@ -68,7 +68,7 @@ export default function AiPage() {
       {sources.length ? (
         <Card className="mt-3">
           <h2 className="font-semibold">Sources</h2>
-          <ul className="mt-2 text-sm">
+          <ul className="kagum-list mt-2 text-sm">
             {sources.map((s) => (
               <li key={`${s.type}-${s.id}`}>
                 {s.type}: {s.label}

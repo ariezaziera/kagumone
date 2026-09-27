@@ -39,7 +39,7 @@ export default async function ProfilePage() {
         {assigned.length === 0 ? (
           <p className="text-sm text-secondary">No inferred skills yet. Complete a categorized task or move content through the workflow.</p>
         ) : (
-          <ul className="space-y-2 text-sm">
+          <ul className="kagum-list text-sm">
             {assigned.map((a) => {
               const skill = skillRows.find((s) => s.id === a.skillId);
               const count = evidence.filter((e) => e.personSkillId === a.id).length;

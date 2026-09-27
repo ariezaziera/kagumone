@@ -25,11 +25,13 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
           <p>Condition: {item.condition}</p>
           <p>Status hint: {item.statusHint}</p>
           <h3 className="pt-2 font-medium">Loan history</h3>
+          <div className="kagum-list">
           {loans.map((l) => (
             <p key={l.id}>
               {l.status} {l.forceReturned ? "(force-returned, original borrower preserved)" : ""} — {formatDateTime(l.createdAt)}
             </p>
           ))}
+          </div>
           <p className="text-xs text-secondary">Photos on open loan: {photos.length}</p>
         </Card>
         <Card>

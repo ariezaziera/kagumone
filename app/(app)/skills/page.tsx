@@ -31,7 +31,7 @@ export default async function SkillsPage() {
             const peopleCount = assigned.filter((a) => a.skillId === s.id).length;
             const evidenceCount = evidence.filter((e) => assigned.some((a) => a.id === e.personSkillId && a.skillId === s.id)).length;
             return (
-              <Card key={s.id}>
+              <Card key={s.id} className="rounded-[24px]">
                 <Link className="font-medium text-info" href={`/skills/${s.id}`}>
                   {s.name}
                 </Link>
@@ -44,11 +44,13 @@ export default async function SkillsPage() {
           })}
         </div>
       )}
+      <div className="kagum-list mt-4">
       {cats.map((c) => (
-        <p key={c.id} className="mt-2 text-sm text-secondary">
+        <p key={c.id} className="text-sm text-secondary">
           Category: {c.name}
         </p>
       ))}
+      </div>
     </div>
   );
 }

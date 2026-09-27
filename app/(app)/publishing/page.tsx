@@ -15,7 +15,7 @@ export default async function PublishingPage() {
         <EmptyState title="Nothing ready to post" body="Content must complete QC and final approval first." />
       ) : (
         ready.map((c) => (
-          <Card key={c.id} className="mb-3">
+          <Card key={c.id} className="mb-3 rounded-[24px]">
             <h2 className="font-medium">{c.title}</h2>
             <ActionForm action={publishContent} submitLabel="Record publication">
               <input type="hidden" name="contentId" value={c.id} />
@@ -37,11 +37,13 @@ export default async function PublishingPage() {
         ))
       )}
       <h2 className="mt-6 mb-2 font-medium">Published</h2>
+      <div className="kagum-list">
       {published.map((c) => (
         <p key={c.id} className="text-sm">
           {c.title} — {c.publishedUrl}
         </p>
       ))}
+      </div>
     </div>
   );
 }

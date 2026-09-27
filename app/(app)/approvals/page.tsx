@@ -30,7 +30,7 @@ export default async function ApprovalsPage() {
         />
       ) : (
         pending.map((a) => (
-          <Card key={a.id} className="mb-3">
+          <Card key={a.id} className="mb-3 rounded-[24px]">
             <p className="font-medium">
               {a.type} <Badge tone={statusTone(a.status)}>{a.status}</Badge>
             </p>
@@ -55,6 +55,7 @@ export default async function ApprovalsPage() {
         ))
       )}
       <h2 className="mt-6 mb-2 font-medium">Status history</h2>
+      <div className="kagum-list">
       {rows
         .filter((r) => r.status !== "pending")
         .map((a) => (
@@ -63,6 +64,7 @@ export default async function ApprovalsPage() {
             {a.comment ? ` · ${a.comment}` : ""}
           </p>
         ))}
+      </div>
     </div>
   );
 }

@@ -50,31 +50,39 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
       <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <h2 className="font-medium">QC history</h2>
+          <div className="kagum-list mt-2">
           {qc.map((q) => (
             <p key={q.id} className="text-sm">
               {q.stage} — {q.status}
             </p>
           ))}
+          </div>
         </Card>
         <Card>
           <h2 className="font-medium">Publications</h2>
+          <div className="kagum-list mt-2">
           {pubs.map((p) => (
             <p key={p.id} className="text-sm">
               {p.platform} {p.url}
             </p>
           ))}
+          </div>
           <h2 className="mt-3 font-medium">Benchmarks</h2>
+          <div className="kagum-list mt-2">
           {benchmarks.map((b) => (
             <p key={b.id} className="text-sm">
               {b.sourceUrl}
             </p>
           ))}
+          </div>
           <h2 className="mt-3 font-medium">Approvals</h2>
+          <div className="kagum-list mt-2">
           {approvals.map((a) => (
             <p key={a.id} className="text-sm">
               {a.status}
             </p>
           ))}
+          </div>
         </Card>
       </div>
     </div>

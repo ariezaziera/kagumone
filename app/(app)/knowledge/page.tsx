@@ -22,7 +22,7 @@ export default async function KnowledgePage() {
         <EmptyState title="No published SOPs yet" body="When management or an executive publishes an SOP, it will appear here." />
       ) : (
         rows.map((a) => (
-          <Card key={a.id} className="mb-2">
+          <Card key={a.id} className="mb-2 rounded-[24px]">
             <p className="font-medium">{a.title}</p>
             <p className="text-xs text-secondary">
               {a.category} · updated {formatDate(a.updatedAt)}

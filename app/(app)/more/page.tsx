@@ -16,7 +16,7 @@ export default async function MorePage() {
         return (
           <div key={g.id} className="mb-4">
             <h2 className="text-sm font-semibold uppercase text-muted">{g.label}</h2>
-            <ul>
+            <ul className="kagum-list mt-2">
               {items.map((i) => (
                 <li key={i.href}>
                   <Link className="text-info" href={i.href}>

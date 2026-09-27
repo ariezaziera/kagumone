@@ -98,7 +98,7 @@ export default async function TeamPage() {
                   </Select>
                 </Field>
               </ActionForm>
-              <ul className="mt-3 text-xs text-secondary">
+              <ul className="kagum-list mt-3 text-xs text-secondary">
                 {reporting.map((r) => (
                   <li key={r.id}>
                     {peopleRows.find((p) => p.id === r.personId)?.fullName} → {peopleRows.find((p) => p.id === r.superiorId)?.fullName}
@@ -109,7 +109,7 @@ export default async function TeamPage() {
           ) : (
             <Card>
               <h2 className="mb-2 font-medium">Reporting</h2>
-              <ul className="text-xs text-secondary">
+              <ul className="kagum-list text-xs text-secondary">
                 {reporting.map((r) => (
                   <li key={r.id}>
                     {peopleRows.find((p) => p.id === r.personId)?.fullName} → {peopleRows.find((p) => p.id === r.superiorId)?.fullName}

@@ -117,24 +117,26 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           </dl>
           <div>
             <p className="text-xs text-secondary">Subtasks</p>
-            {subtasks.length === 0 ? <p>—</p> : subtasks.map((s) => <p key={s.id}>{s.title} ({s.status})</p>)}
+            {subtasks.length === 0 ? <p>—</p> : <div className="kagum-list mt-2">{subtasks.map((s) => <p key={s.id}>{s.title} ({s.status})</p>)}</div>}
           </div>
           <div>
             <p className="text-xs text-secondary">Expected Deliverables</p>
             {expected.length === 0 ? (
               <p>—</p>
             ) : (
-              expected.map((d) => (
+              <div className="kagum-list mt-2">
+              {expected.map((d) => (
                 <p key={d.id}>
                   {d.label}
                   {d.description ? ` — ${d.description}` : ""}
                 </p>
-              ))
+              ))}
+              </div>
             )}
           </div>
           <div>
             <p className="text-xs text-secondary">References / Attachments</p>
-            {refs.length === 0 ? <p>—</p> : refs.map((r) => <p key={r.id}>{r.label} {r.url}</p>)}
+            {refs.length === 0 ? <p>—</p> : <div className="kagum-list mt-2">{refs.map((r) => <p key={r.id}>{r.label} {r.url}</p>)}</div>}
           </div>
           <div className="rounded-[12px] border border-info/30 bg-info-soft p-3">
             <p className="text-xs font-medium text-info">Planned Working Time</p>
@@ -183,7 +185,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               <Textarea name="reason" required />
             </Field>
           </ActionForm>
-          <ul className="mt-3 text-xs text-secondary">
+          <ul className="kagum-list mt-3 text-xs text-secondary">
             {extensions.map((e) => (
               <li key={e.id}>
                 {e.status}: original {formatDateTime(e.originalDeadline)}
@@ -215,7 +217,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 <p className="text-success">Completion Submitted At: {formatDateTime(c.submittedAt ?? c.createdAt)}</p>
                 <p className="text-error">Overdue: {formatOverdueLabel(c.overdueDays ?? 0)}</p>
                 <p className="mt-2">{c.summary}</p>
-                <ul className="mt-2">
+                <ul className="kagum-list mt-2">
                   {dels.map((d) => (
                     <li key={d.id}>
                       {d.label}: {d.description} {d.url ? `(${d.url})` : ""}
@@ -238,7 +240,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         <Card>
           <h2 className="mb-2 font-medium">People Involved / Collaboration</h2>
           <p className="mb-2 text-xs text-secondary">Task owner (Handled By) is not changed by this list.</p>
-          <ul className="mb-2 text-sm">
+          <ul className="kagum-list mb-2 text-sm">
             <li>
               {assignee?.fullName ?? "—"} — Task Owner
             </li>
@@ -277,7 +279,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
       </div>
       <Card className="mt-4">
         <h2 className="mb-2 font-medium">History</h2>
-        <ul className="space-y-2 text-sm text-secondary">
+        <ul className="kagum-list text-sm text-secondary">
           {history.map((h) => (
             <li key={h.id}>
               {formatDateTime(h.createdAt)} — {h.summary}

@@ -48,10 +48,10 @@ export default async function DashboardPage() {
         <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">KAGUM ONE</p>
-            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-[30px]">
+            <h1 className="mt-1 text-2xl font-bold leading-snug sm:text-[30px]">
               {greeting()}, {name}
             </h1>
-            <p className="mt-1 text-sm text-secondary">Here&apos;s what&apos;s happening in KAGUM today.</p>
+            <p className="mt-1.5 text-sm leading-relaxed text-secondary">Here&apos;s what&apos;s happening in KAGUM today.</p>
             <p className="mt-3 text-sm font-medium text-text">{date}</p>
             <div className="mt-4 flex flex-wrap gap-2">
               <Link className="rounded-[12px] bg-primary px-3 py-2 text-sm font-semibold text-white" href="/my-tasks">
@@ -111,9 +111,9 @@ export default async function DashboardPage() {
           {data.inProgress.length === 0 ? (
             <EmptyState plain title="You're all caught up" body="No assigned tasks are in progress right now." illustration="caught-up" />
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="kagum-list text-sm">
               {data.inProgress.slice(0, 6).map((task) => (
-                <li key={task.id} className="flex items-center justify-between gap-2 rounded-[12px] border border-border px-3 py-2">
+                <li key={task.id} className="flex items-center justify-between gap-3">
                   <Link className="font-medium text-text" href={`/tasks/${task.id}`}>
                     {task.title}
                   </Link>
@@ -131,9 +131,9 @@ export default async function DashboardPage() {
           {data.upcoming.length === 0 ? (
             <EmptyState plain title="No upcoming deadlines" body="Assigned tasks with official deadlines will appear here." />
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="kagum-list text-sm">
               {data.upcoming.map((t) => (
-                <li key={t.id} className="flex justify-between gap-2">
+                <li key={t.id} className="flex items-center justify-between gap-3">
                   <Link className="font-medium text-info" href={`/tasks/${t.id}`}>
                     {t.title}
                   </Link>
@@ -156,9 +156,9 @@ export default async function DashboardPage() {
                   </Badge>
                 ))}
               </div>
-              <ul className="space-y-2 text-sm">
+              <ul className="kagum-list text-sm">
                 {data.contentPipeline.slice(0, 6).map((c) => (
-                  <li key={c.id} className="flex justify-between gap-2">
+                  <li key={c.id} className="flex items-center justify-between gap-3">
                     <Link href={`/content/${c.id}`}>{c.title}</Link>
                     <Badge tone={statusTone(c.stage)}>{c.stage}</Badge>
                   </li>
@@ -177,7 +177,7 @@ export default async function DashboardPage() {
           {data.notifications.length === 0 ? (
             <EmptyState plain title="All quiet here" body="You don't have any new notifications." illustration="quiet" />
           ) : (
-            <ul className="space-y-2 text-sm">
+            <ul className="kagum-list text-sm">
               {data.notifications.map((n) => (
                 <li key={n.id}>
                   <Link className="font-medium text-info" href={n.href || "/notifications"}>
@@ -199,9 +199,9 @@ export default async function DashboardPage() {
           {data.activity.length === 0 ? (
             <EmptyState plain title="No activity yet" body="Operational events will be recorded here." illustration="none" />
           ) : (
-            <ul className="space-y-2 text-sm text-secondary">
+            <ul className="kagum-list text-sm text-secondary">
               {data.activity.map((a) => (
-                <li key={a.id} className="border-b border-border pb-2 last:border-0">
+                <li key={a.id}>
                   {a.summary}
                 </li>
               ))}
