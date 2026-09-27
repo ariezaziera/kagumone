@@ -10,7 +10,7 @@ export default async function ContentQcPage({ params }: { params: Promise<{ id: 
   if (!content) notFound();
   return (
     <div>
-      <PageHeader title={`QC: ${content.title}`} description="Checklist, comments, and correction requests become records." />
+      <PageHeader module="content" title={`QC: ${content.title}`} description="Checklist, comments, and correction requests become records." />
       <Card>
         <p className="mb-3 text-sm">{content.brief || content.caption || "No preview copy yet."}</p>
         <ActionForm action={submitQc} submitLabel="Record QC decision">

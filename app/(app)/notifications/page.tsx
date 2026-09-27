@@ -21,6 +21,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   return (
     <div>
       <PageHeader
+        module="workspace"
         title="Notifications"
         description="Only events that need awareness or action."
         actions={
@@ -42,7 +43,7 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         <Link href="/notifications?filter=attention">Needs attention</Link>
       </div>
       {filtered.length === 0 ? (
-        <EmptyState title="No notifications" body="When a task is assigned or an approval is needed, it will show here." />
+        <EmptyState title="All quiet here" body="You don't have any new notifications." illustration="quiet" />
       ) : (
         filtered.map((n) => (
           <Card key={n.id} className="mb-2">

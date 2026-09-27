@@ -15,6 +15,7 @@ export default async function ApprovalsPage() {
   return (
     <div>
       <PageHeader
+        module="admin"
         title="Approvals"
         description={
           canDecide

@@ -11,7 +11,7 @@ export default async function ActivityPage() {
   ]);
   return (
     <div>
-      <PageHeader title="Activity / History" description="Activity is human-readable. Audit is system-level change trace." />
+      <PageHeader module="admin" title="Activity / History" description="Activity is human-readable. Audit is system-level change trace." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <h2 className="mb-2 font-medium">Activity</h2>

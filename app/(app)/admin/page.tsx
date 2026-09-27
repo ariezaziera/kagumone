@@ -20,7 +20,7 @@ export default async function AdminPage() {
   ]);
   return (
     <div>
-      <PageHeader title="Administration" description="Configuration does not grant unrestricted data modification by itself." />
+      <PageHeader module="admin" title="Administration" description="Configuration does not grant unrestricted data modification by itself." />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <h2 className="font-medium">Roles</h2>

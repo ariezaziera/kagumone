@@ -13,7 +13,7 @@ export default async function TimePage() {
   const actual = entries.reduce((s, e) => s + e.actualMinutes, 0);
   return (
     <div>
-      <PageHeader title="Time Tracking" description="Actual time comes from recorded entries, not status changes." />
+      <PageHeader module="reports" title="Time Tracking" description="Actual time comes from recorded entries, not status changes." />
       <div className="mb-4 grid gap-3 md:grid-cols-2">
         <Card>
           <p className="text-xs text-secondary">Planned minutes</p>
@@ -26,7 +26,7 @@ export default async function TimePage() {
       </div>
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <Table>
-          <thead className="bg-primary-light text-xs uppercase text-secondary">
+          <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
             <tr>
               <th className="px-3 py-2">Date</th>
               <th className="px-3 py-2">Planned</th>

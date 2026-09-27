@@ -20,7 +20,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
   ]);
   return (
     <div>
-      <PageHeader title={person.fullName} description={`${person.positionTitle ?? ""} · ${person.employmentType}`} />
+      <PageHeader module="people" title={person.fullName} description={`${person.positionTitle ?? ""} · ${person.employmentType}`} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="text-sm space-y-1">
           <p>Status: {person.organizationalStatus}</p>

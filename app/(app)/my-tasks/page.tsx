@@ -21,7 +21,7 @@ export default async function MyTasksPage() {
   const today = mine.filter((t) => t.status === "acknowledged" || t.status === "in_progress");
   return (
     <div>
-      <PageHeader title="My Tasks" description="Work assigned to you that needs action." />
+      <PageHeader module="tasks" title="My Tasks" description="Work assigned to you that needs action." />
       {overdue.length ? (
         <Card className="mb-4 border-error">
           <h2 className="font-medium text-error">Overdue</h2>

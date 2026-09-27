@@ -17,7 +17,7 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   const photos = open ? await db.select().from(equipmentPhotos).where(eq(equipmentPhotos.loanId, open.id)) : [];
   return (
     <div>
-      <PageHeader title={item.name} description={`${item.assetCode} · ${item.serialNumber ?? "no serial"}`} />
+      <PageHeader module="equipment" title={item.name} description={`${item.assetCode} · ${item.serialNumber ?? "no serial"}`} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-1 text-sm">
           <p>Category: {item.category}</p>

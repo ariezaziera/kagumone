@@ -14,6 +14,7 @@ export default async function KpiPage() {
   return (
     <div>
       <PageHeader
+        module="kpi"
         title="KPI"
         description={
           canEdit

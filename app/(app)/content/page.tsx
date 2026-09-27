@@ -14,13 +14,13 @@ export default async function ContentPage() {
   ]);
   return (
     <div>
-      <PageHeader title="Content" description="Lifecycle records. Planned is not the same as published or KPI count." />
+      <PageHeader module="content" title="Content" description="Lifecycle records. Planned is not the same as published or KPI count." />
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         {rows.length === 0 ? (
           <EmptyState title="No content records" body="Create a content item to start the production and QC loop." />
         ) : (
           <Table>
-            <thead className="bg-primary-light text-xs uppercase text-secondary">
+            <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
               <tr>
                 <th className="px-3 py-2">Title</th>
                 <th className="px-3 py-2">Stage</th>

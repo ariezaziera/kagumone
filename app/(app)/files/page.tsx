@@ -7,13 +7,13 @@ export default async function FilesPage() {
   const rows = await listFiles();
   return (
     <div>
-      <PageHeader title="Files" description="Files are attached to operational records, not a global dump." />
+      <PageHeader module="projects" title="Files" description="Files are attached to operational records, not a global dump." />
       <FileUpload />
       {rows.length === 0 ? (
         <EmptyState title="No files yet" body="Upload evidence against a project, task, content, or handover." />
       ) : (
         <Table>
-          <thead className="bg-primary-light text-xs uppercase text-secondary">
+          <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
             <tr>
               <th className="px-3 py-2">File</th>
               <th className="px-3 py-2">Related</th>

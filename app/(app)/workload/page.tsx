@@ -18,9 +18,9 @@ export default async function WorkloadPage() {
   });
   return (
     <div>
-      <PageHeader title="Workload" description="Descriptive counts only. The system does not rank or judge people." />
+      <PageHeader module="reports" title="Workload" description="Descriptive counts only. The system does not rank or judge people." />
       <Table>
-        <thead className="bg-primary-light text-xs uppercase text-secondary">
+        <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
           <tr>
             <th className="px-3 py-2">Person</th>
             <th className="px-3 py-2">Active tasks</th>

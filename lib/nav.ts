@@ -97,10 +97,10 @@ export const NAV_GROUPS: NavGroup[] = [
 ];
 
 export const MOBILE_NAV = [
-  { href: "/dashboard", label: "Home" },
+  { href: "/dashboard", label: "Dashboard" },
   { href: "/my-tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
-  { href: "/notifications", label: "Alerts" },
+  { href: "/notifications", label: "Notifications" },
   { href: "/more", label: "More" },
 ];
 

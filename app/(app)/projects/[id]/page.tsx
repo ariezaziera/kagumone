@@ -30,7 +30,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
 
   return (
     <div>
-      <PageHeader title={project.name} description={project.objective ?? "Project record"} />
+      <PageHeader module="projects" title={project.name} description={project.objective ?? "Project record"} />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2 space-y-2">
           <div className="flex gap-2">

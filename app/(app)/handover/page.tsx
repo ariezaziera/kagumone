@@ -7,7 +7,7 @@ export default async function HandoverPage() {
   const [rows, peopleRows] = await Promise.all([listHandovers(), listPeople()]);
   return (
     <div>
-      <PageHeader title="Handover" description="Transfers context, outstanding work, and knowledge. It does not copy tasks as the handover itself." />
+      <PageHeader module="admin" title="Handover" description="Transfers context, outstanding work, and knowledge. It does not copy tasks as the handover itself." />
       {rows.length === 0 ? (
         <EmptyState title="No handovers" body="Start a handover when responsibility changes." />
       ) : (

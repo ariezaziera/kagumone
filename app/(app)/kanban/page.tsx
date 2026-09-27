@@ -7,6 +7,7 @@ export default async function KanbanPage() {
   return (
     <div>
       <PageHeader
+        module="tasks"
         title="Kanban"
         description="Drag only allowed transitions. Completing a task still requires a completion record."
       />

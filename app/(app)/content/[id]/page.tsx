@@ -21,7 +21,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
   ]);
   return (
     <div>
-      <PageHeader title={content.title} description={`${content.pillar ?? "—"} · ${content.platform ?? "—"}`} />
+      <PageHeader module="content" title={content.title} description={`${content.pillar ?? "—"} · ${content.platform ?? "—"}`} />
       <Card className="mb-4">
         <p className="text-sm">Current stage: <Badge tone={statusTone(content.stage)}>{content.stage}</Badge></p>
         <p className="mt-2 text-sm">{content.brief}</p>

@@ -17,7 +17,7 @@ export function PersonaSwitcher() {
   const [error, setError] = useState<string | null>(null);
   if (process.env.NODE_ENV === "production") return null;
   return (
-    <div className="rounded-md border border-warning/40 bg-amber-50 p-3 text-sm">
+    <div className="rounded-[12px] border border-warning/40 bg-warning-soft p-3 text-sm">
       <p className="font-medium text-warning">Development persona switcher</p>
       <p className="mt-1 text-secondary">Uses the real login pathway. Password for demo accounts is Demo1234!</p>
       <div className="mt-2 flex gap-2">

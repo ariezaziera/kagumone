@@ -14,7 +14,7 @@ export default async function ReportsPage() {
   const overdue = tasks.filter((t) => isTaskOverdue(t));
   return (
     <div>
-      <PageHeader title="Reports" description="Derived from authoritative records. CSV export uses the same access rules." />
+      <PageHeader module="reports" title="Reports" description="Derived from authoritative records. CSV export uses the same access rules." />
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <p className="text-xs text-secondary">Projects</p>
@@ -31,7 +31,7 @@ export default async function ReportsPage() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2 text-sm">
         {["projects", "tasks", "overdue", "content", "kpi", "equipment", "workload", "time", "team"].map((r) => (
-          <a key={r} className="rounded-md border border-border bg-surface px-3 py-1 capitalize" href={`/api/export/${r}`}>
+          <a key={r} className="rounded-[12px] border border-border bg-surface px-3 py-1.5 font-medium capitalize" href={`/api/export/${r}`}>
             Export {r} CSV
           </a>
         ))}

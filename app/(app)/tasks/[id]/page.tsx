@@ -57,7 +57,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div>
-      <PageHeader title="Work Task Notice — Martech Department" description="Formal assigned task record." />
+      <PageHeader module="tasks" title="Work Task Notice — Martech Department" description="Formal assigned task record." />
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2 space-y-2 text-sm">
           <Badge tone={statusTone(task.status)}>{statusLabel}</Badge>
@@ -136,7 +136,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
             <p className="text-xs text-secondary">References / Attachments</p>
             {refs.length === 0 ? <p>—</p> : refs.map((r) => <p key={r.id}>{r.label} {r.url}</p>)}
           </div>
-          <div className="rounded-md border border-info/40 bg-primary-light p-3">
+          <div className="rounded-[12px] border border-info/30 bg-info-soft p-3">
             <p className="text-xs font-medium text-info">Planned Working Time</p>
             <p>
               {formatDateTime(task.plannedStartAt)} — {formatDateTime(task.plannedEndAt)}

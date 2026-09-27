@@ -35,7 +35,7 @@ export default async function EquipmentPage() {
   });
   return (
     <div>
-      <PageHeader title="Equipment" description="Current state is derived from loans, condition, and maintenance." />
+      <PageHeader module="equipment" title="Equipment" description="Current state is derived from loans, condition, and maintenance." />
       <div className="mb-4 grid gap-3 md:grid-cols-4">
         {["available", "borrowed", "late", "maintenance"].map((key) => (
           <Card key={key}>
@@ -49,7 +49,7 @@ export default async function EquipmentPage() {
           <EmptyState title="No equipment registered" body="Register an asset before borrowing." />
         ) : (
           <Table>
-            <thead className="bg-primary-light text-xs uppercase text-secondary">
+            <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Code</th>

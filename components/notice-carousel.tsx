@@ -35,10 +35,10 @@ export function NoticeCarousel({ notices }: { notices: NoticeSlide[] }) {
         ? "Needs participation"
         : "Announcement";
   return (
-    <Card className="border-info/40">
+    <Card accent="red" className="border-primary/20">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-medium uppercase tracking-wide text-info">{kindLabel}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-primary">{kindLabel}</p>
           <h2 className="mt-1 text-lg font-semibold">{current.title}</h2>
           <p className="mt-2 whitespace-pre-wrap text-sm text-secondary">{current.body}</p>
           {current.requiresParticipation ? (

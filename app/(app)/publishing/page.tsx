@@ -10,7 +10,7 @@ export default async function PublishingPage() {
   const published = await db.select().from(contents).where(eq(contents.stage, "published"));
   return (
     <div>
-      <PageHeader title="Publishing" description="Approved content is recorded with platform, URL, and actual date." />
+      <PageHeader module="content" title="Publishing" description="Approved content is recorded with platform, URL, and actual date." />
       {ready.length === 0 ? (
         <EmptyState title="Nothing ready to post" body="Content must complete QC and final approval first." />
       ) : (

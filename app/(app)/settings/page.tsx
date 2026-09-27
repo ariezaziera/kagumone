@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const [status, setStatus] = useState<string | null>(null);
   return (
     <div>
-      <PageHeader title="Settings" description="Account and security preferences. Operational records live in their own modules." />
+      <PageHeader module="admin" title="Settings" description="Account and security preferences. Operational records live in their own modules." />
       <Card>
         <h2 className="mb-3 font-medium">Change password</h2>
         <form

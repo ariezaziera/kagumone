@@ -14,6 +14,7 @@ export default async function KnowledgePage() {
   return (
     <div>
       <PageHeader
+        module="knowledge"
         title="Knowledge Base"
         description="Published SOPs and guides. Only management and executives can create or edit them."
       />

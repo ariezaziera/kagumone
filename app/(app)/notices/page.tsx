@@ -14,6 +14,7 @@ export default async function NoticesPage() {
   return (
     <div>
       <PageHeader
+        module="workspace"
         title="Notices"
         description="Event notices and participation posts for the whole team. This is not an SOP and not an approval."
       />

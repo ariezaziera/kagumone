@@ -14,7 +14,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ id
   const evidence = await db.select().from(skillEvidence);
   return (
     <div>
-      <PageHeader title={skill.name} description={skill.description ?? "Observed from completed work in this category."} />
+      <PageHeader module="skills" title={skill.name} description={skill.description ?? "Observed from completed work in this category."} />
       {assigned.length === 0 ? <Card>No one has completed work in this skill yet.</Card> : null}
       {assigned.map((a) => {
         const notes = evidence.filter((e) => e.personSkillId === a.id);

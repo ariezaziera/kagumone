@@ -13,11 +13,13 @@ export function PlannedWorkForm({
   projects,
   contents,
   existing,
+  label,
 }: {
   defaultDate: string;
   tasks: Option[];
   projects: Option[];
   contents: Option[];
+  label?: string;
   existing?: {
     id: string;
     title: string;
@@ -34,11 +36,11 @@ export function PlannedWorkForm({
   return (
     <div>
       <Button type="button" variant={existing ? "ghost" : "primary"} onClick={() => setOpen(true)}>
-        {existing ? "Reschedule planned work" : "Add Planned Work"}
+        {existing ? "Reschedule planned work" : label ?? "Add Planned Work"}
       </Button>
       {open ? (
         <form
-          className="mt-3 space-y-2 rounded-md border border-info/40 bg-primary-light p-3"
+          className="mt-3 space-y-2 rounded-[12px] border border-info/30 bg-info-soft p-3"
           action={async (form) => {
             setError(null);
             try {

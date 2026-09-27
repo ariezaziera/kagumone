@@ -32,13 +32,13 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
   ];
   return (
     <div>
-      <PageHeader title="Tasks" description="Official status, assignee, and deadline live on the task record." />
+      <PageHeader module="tasks" title="Tasks" description="Official status, assignee, and deadline live on the task record." />
       <div className="mb-4 flex flex-wrap gap-2">
         {tabs.map(([key, label]) => (
           <Link
             key={key}
             href={`/tasks?tab=${key}`}
-            className={`rounded-md px-3 py-1 text-sm ${tab === key ? "bg-primary text-white" : "bg-surface border border-border"}`}
+            className={`rounded-[12px] px-3 py-1.5 text-sm font-medium ${tab === key ? "bg-primary text-white" : "border border-border bg-surface"}`}
           >
             {label}
           </Link>
@@ -49,7 +49,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           <EmptyState title="No tasks in this view" body="Create a task or change filters." />
         ) : (
           <Table>
-            <thead className="bg-primary-light text-xs uppercase text-secondary">
+            <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Status</th>

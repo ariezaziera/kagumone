@@ -1,24 +1,110 @@
 import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import {
+  BarChart3,
+  BookOpen,
+  Bot,
+  CalendarDays,
+  Camera,
+  Circle,
+  Clapperboard,
+  FolderKanban,
+  LayoutDashboard,
+  ListChecks,
+  Shield,
+  Users,
+} from "lucide-react";
+import { Illustration, type IllustrationName } from "@/components/illustrations";
 import { cn } from "@/lib/utils";
 
-export function Card({ className, ...props }: HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn("rounded-lg border border-border bg-surface p-4", className)} {...props} />;
+export type ModuleKey =
+  | "dashboard"
+  | "projects"
+  | "tasks"
+  | "calendar"
+  | "content"
+  | "equipment"
+  | "kpi"
+  | "people"
+  | "skills"
+  | "knowledge"
+  | "ai"
+  | "reports"
+  | "admin"
+  | "workspace";
+
+const MODULES: Record<
+  ModuleKey,
+  { label: string; wash: string; ink: string; icon: typeof Circle }
+> = {
+  dashboard: { label: "Workspace", wash: "bg-yellow-soft", ink: "text-warning", icon: LayoutDashboard },
+  projects: { label: "Projects", wash: "bg-blue-soft", ink: "text-info", icon: FolderKanban },
+  tasks: { label: "Tasks", wash: "bg-yellow-soft", ink: "text-warning", icon: ListChecks },
+  calendar: { label: "Calendar", wash: "bg-orange-soft", ink: "text-orange", icon: CalendarDays },
+  content: { label: "Content", wash: "bg-purple-soft", ink: "text-purple", icon: Clapperboard },
+  equipment: { label: "Equipment", wash: "bg-green-soft", ink: "text-success", icon: Camera },
+  kpi: { label: "Performance", wash: "bg-blue-soft", ink: "text-info", icon: BarChart3 },
+  people: { label: "People", wash: "bg-pink-soft", ink: "text-pink", icon: Users },
+  skills: { label: "Skills", wash: "bg-purple-soft", ink: "text-purple", icon: BookOpen },
+  knowledge: { label: "Knowledge", wash: "bg-purple-soft", ink: "text-purple", icon: BookOpen },
+  ai: { label: "Assistant", wash: "bg-purple-soft", ink: "text-purple", icon: Bot },
+  reports: { label: "Reports", wash: "bg-blue-soft", ink: "text-info", icon: BarChart3 },
+  admin: { label: "Administration", wash: "bg-charcoal-soft", ink: "text-charcoal", icon: Shield },
+  workspace: { label: "KAGUM ONE", wash: "bg-primary-light", ink: "text-primary", icon: Circle },
+};
+
+export function Card({
+  className,
+  accent,
+  ...props
+}: HTMLAttributes<HTMLDivElement> & {
+  accent?: "red" | "yellow" | "blue" | "green" | "orange" | "purple" | "pink" | "charcoal";
+}) {
+  const stripe = {
+    red: "border-t-primary",
+    yellow: "border-t-yellow",
+    blue: "border-t-blue",
+    green: "border-t-green",
+    orange: "border-t-orange",
+    purple: "border-t-purple",
+    pink: "border-t-pink",
+    charcoal: "border-t-charcoal",
+  } as const;
+  return (
+    <div
+      className={cn(
+        "kagum-card rounded-[18px] border border-border bg-surface p-4 shadow-[var(--shadow-card)]",
+        accent ? cn("border-t-[3px]", stripe[accent]) : null,
+        className,
+      )}
+      {...props}
+    />
+  );
 }
 
 export function PageHeader({
   title,
   description,
   actions,
+  module = "workspace",
 }: {
   title: string;
   description?: string;
   actions?: React.ReactNode;
+  module?: ModuleKey;
 }) {
+  const theme = MODULES[module];
+  const Icon = theme.icon;
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-      <div>
-        <h1 className="text-xl font-semibold text-text">{title}</h1>
-        {description ? <p className="mt-1 text-sm text-secondary">{description}</p> : null}
+    <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="flex items-start gap-3">
+        <span className={cn("mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px]", theme.wash, theme.ink)}>
+          <Icon size={20} aria-hidden />
+        </span>
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">{theme.label}</p>
+          <h1 className="text-2xl font-bold tracking-tight text-text sm:text-[28px]">{title}</h1>
+          {description ? <p className="mt-1 max-w-2xl text-sm text-secondary">{description}</p> : null}
+        </div>
       </div>
       {actions ? <div className="flex flex-wrap gap-2">{actions}</div> : null}
     </div>
@@ -38,37 +124,28 @@ export function Button({
   } as const;
   return (
     <button
-      className={cn("inline-flex items-center justify-center rounded-md px-3 py-2 text-sm font-medium disabled:opacity-50", styles[variant], className)}
+      className={cn(
+        "inline-flex items-center justify-center rounded-[12px] px-3.5 py-2 text-sm font-semibold transition-colors disabled:opacity-50",
+        styles[variant],
+        className,
+      )}
       {...props}
     />
   );
 }
 
-export function Input(props: InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      className={cn("w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text", props.className)}
-      {...props}
-    />
-  );
+const controlClass = "w-full rounded-[12px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-primary";
+
+export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
+  return <input className={cn(controlClass, className)} {...props} />;
 }
 
-export function Textarea(props: TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      className={cn("w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text", props.className)}
-      {...props}
-    />
-  );
+export function Textarea({ className, ...props }: TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea className={cn(controlClass, className)} {...props} />;
 }
 
-export function Select(props: SelectHTMLAttributes<HTMLSelectElement>) {
-  return (
-    <select
-      className={cn("w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-text", props.className)}
-      {...props}
-    />
-  );
+export function Select({ className, ...props }: SelectHTMLAttributes<HTMLSelectElement>) {
+  return <select className={cn(controlClass, className)} {...props} />;
 }
 
 export function Label({ className, ...props }: HTMLAttributes<HTMLLabelElement>) {
@@ -84,46 +161,123 @@ export function Field({ label, children }: { label: string; children: React.Reac
   );
 }
 
+export type BadgeTone = "success" | "warning" | "error" | "info" | "neutral" | "yellow" | "blue" | "purple" | "orange" | "pink";
+
 export function Badge({
   children,
   tone = "neutral",
 }: {
   children: React.ReactNode;
-  tone?: "success" | "warning" | "error" | "info" | "neutral";
+  tone?: BadgeTone;
 }) {
-  const map = {
-    success: "bg-green-50 text-success",
-    warning: "bg-amber-50 text-warning",
-    error: "bg-red-50 text-error",
-    info: "bg-blue-50 text-info",
-    neutral: "bg-primary-light text-primary",
+  const map: Record<BadgeTone, string> = {
+    success: "bg-success-soft text-success",
+    warning: "bg-warning-soft text-warning",
+    error: "bg-error-soft text-error",
+    info: "bg-info-soft text-info",
+    neutral: "bg-canvas text-charcoal",
+    yellow: "bg-warning-soft text-warning",
+    blue: "bg-info-soft text-info",
+    purple: "bg-purple-soft text-purple",
+    orange: "bg-orange-soft text-orange",
+    pink: "bg-pink-soft text-pink",
   };
-  return <span className={cn("inline-flex rounded-full px-2 py-0.5 text-xs font-medium", map[tone])}>{children}</span>;
+  const label = typeof children === "string" ? children.replaceAll("_", " ") : children;
+  return <span className={cn("inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold capitalize", map[tone])}>{label}</span>;
 }
 
-export function statusTone(status: string): "success" | "warning" | "error" | "info" | "neutral" {
-  const value = status.toLowerCase();
-  if (["completed", "published", "approved", "available", "returned", "active"].includes(value)) return "success";
-  if (["pending", "pending_acknowledgement", "submitted", "late", "maintenance", "overdue"].includes(value)) return "warning";
-  if (["rejected", "blocked", "missing", "damaged", "inactive"].includes(value)) return "error";
-  if (["in_progress", "borrowed", "qc1", "qc2"].includes(value)) return "info";
-  return "neutral";
+const STATUS_TONES: Record<string, BadgeTone> = {
+  pending_acknowledgement: "yellow",
+  pending: "yellow",
+  acknowledged: "blue",
+  in_progress: "purple",
+  submitted: "orange",
+  completed: "success",
+  overdue: "error",
+  draft: "neutral",
+  benchmark: "neutral",
+  planned: "blue",
+  production: "purple",
+  self_qc: "yellow",
+  qc1: "orange",
+  corrections_qc1: "error",
+  qc2: "orange",
+  corrections_qc2: "error",
+  final_approval: "success",
+  ready_to_post: "blue",
+  published: "success",
+  performance: "purple",
+  available: "success",
+  reserved: "blue",
+  borrowed: "purple",
+  late: "error",
+  damaged: "orange",
+  maintenance: "yellow",
+  returned: "success",
+  approved: "success",
+  rejected: "error",
+  blocked: "error",
+  missing: "error",
+  inactive: "neutral",
+  active: "success",
+  planning: "blue",
+  high: "error",
+  urgent: "error",
+  medium: "yellow",
+  low: "neutral",
+};
+
+export function statusTone(status: string): BadgeTone {
+  return STATUS_TONES[status.toLowerCase()] ?? "neutral";
 }
 
-export function EmptyState({ title, body, action }: { title: string; body: string; action?: React.ReactNode }) {
-  return (
-    <Card className="text-center">
-      <p className="font-medium text-text">{title}</p>
-      <p className="mt-1 text-sm text-secondary">{body}</p>
-      {action ? <div className="mt-3">{action}</div> : null}
-    </Card>
+const EMPTY_ART: Record<string, IllustrationName> = {
+  "no projects yet": "empty-folder",
+  "no tasks in this view": "search",
+  "nothing overdue": "caught-up",
+  "no notifications": "quiet",
+  "all quiet here": "quiet",
+  "no upcoming deadlines": "caught-up",
+  "no content records": "content",
+  "no files yet": "empty-folder",
+  "no equipment registered": "equipment",
+  "nothing ready to post": "content",
+  "no handovers": "empty-folder",
+  "no published sops yet": "knowledge",
+  "no notices yet": "quiet",
+  "no activity yet": "empty",
+};
+
+export function EmptyState({
+  title,
+  body,
+  action,
+  illustration,
+  plain = false,
+}: {
+  title: string;
+  body: string;
+  action?: React.ReactNode;
+  illustration?: IllustrationName | "none";
+  plain?: boolean;
+}) {
+  const art = illustration === "none" ? null : illustration ?? EMPTY_ART[title.toLowerCase()] ?? "empty";
+  const content = (
+    <>
+      {art ? <Illustration name={art} className="mb-3 h-24 w-36" /> : null}
+      <p className="text-base font-semibold text-text">{title}</p>
+      <p className="mt-1 max-w-md text-sm text-secondary">{body}</p>
+      {action ? <div className="mt-4">{action}</div> : null}
+    </>
   );
+  if (plain) return <div className="flex flex-col items-center px-2 py-4 text-center">{content}</div>;
+  return <Card className="flex flex-col items-center px-6 py-8 text-center">{content}</Card>;
 }
 
 export function Table({ children }: { children: React.ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border bg-surface">
-      <table className="min-w-full text-left text-sm">{children}</table>
+    <div className="overflow-x-auto rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
+      <table className="min-w-full text-left text-[13px]">{children}</table>
     </div>
   );
 }

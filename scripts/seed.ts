@@ -1,17 +1,22 @@
 import "./load-env";
+import { eq } from "drizzle-orm";
 import { createSignupAuth } from "@/lib/auth/signup";
 import { createDb } from "@/lib/db";
 import {
   activityLogs,
+  announcements,
+  calendarEvents,
   contents,
   departments,
   equipment,
+  knowledgeArticles,
   kpiPeriods,
   kpiTargets,
   people,
   permissions,
   personDepartments,
   personRoles,
+  plannedWork,
   projects,
   projectMembers,
   projectPhases,
@@ -20,16 +25,249 @@ import {
   roles,
   settings,
   tasks,
+  timeEntries,
 } from "@/lib/db/schema";
-import { PERMISSIONS, SEED_ROLE_PERMISSIONS, type RoleKey } from "@/lib/permissions";
+import { PERMISSIONS, SEED_ROLE_PERMISSIONS, TASK_STATUSES, type RoleKey } from "@/lib/permissions";
 import { newId, now } from "@/lib/utils";
 
 const DEMO_PASSWORD = "Demo1234!";
+
+function klDay(offset: number, hour = 10) {
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Asia/Kuala_Lumpur",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(new Date());
+  const [year, month, day] = today.split("-").map(Number);
+  const utc = new Date(Date.UTC(year, month - 1, day + offset));
+  const ymd = utc.toISOString().slice(0, 10);
+  return {
+    ymd,
+    at: new Date(`${ymd}T${String(hour).padStart(2, "0")}:00:00+08:00`),
+  };
+}
+
+async function seedDemoWorkspace(db: ReturnType<typeof createDb>) {
+  const marker = await db.select().from(settings).where(eq(settings.key, "demo_workspace_fill"));
+  if (marker.length) {
+    console.log("Demo calendar, notices, and knowledge already filled.");
+    return;
+  }
+  const demoPeople = await db.select().from(people).where(eq(people.isDemo, true));
+  const byEmail = Object.fromEntries(demoPeople.map((person) => [person.email, person.id]));
+  const roleIds = [
+    byEmail["admin@demo.kagum.local"],
+    byEmail["management@demo.kagum.local"],
+    byEmail["executive@demo.kagum.local"],
+    byEmail["staff@demo.kagum.local"],
+    byEmail["intern@demo.kagum.local"],
+  ].filter(Boolean);
+  if (roleIds.length < 5) {
+    console.log("Demo people are incomplete; workspace fill skipped.");
+    return;
+  }
+  const [project] = await db.select().from(projects).where(eq(projects.name, "Demo Campaign Q3")).limit(1);
+  const creatorId = byEmail["executive@demo.kagum.local"];
+  const titles = [
+    "Review campaign copy",
+    "Shoot product stills",
+    "Update landing page",
+    "Compile weekly report",
+    "Schedule social posts",
+    "Check equipment booking",
+    "Draft client reply",
+    "Prepare briefing deck",
+    "Log studio hours",
+    "Publish knowledge note",
+    "Confirm event coverage",
+    "QA caption set",
+  ];
+
+  const taskRows = [];
+  for (let day = -1; day <= 10; day += 1) {
+    const when = klDay(day, 10 + (day % 3));
+    for (let slot = 0; slot < 2; slot += 1) {
+      const index = (day + 1) * 2 + slot;
+      const status = TASK_STATUSES[index % TASK_STATUSES.length];
+      const assigneeId = roleIds[index % roleIds.length];
+      taskRows.push({
+        id: newId(),
+        title: `Demo: ${titles[index % titles.length]} (${when.ymd})`,
+        description: "Development sample so the calendar and kanban show more than one record.",
+        projectId: project?.id,
+        creatorId,
+        assigneeId,
+        priority: index % 3 === 0 ? "high" : index % 3 === 1 ? "medium" : "low",
+        status,
+        category: "Social Media Management",
+        officialDeadline: when.at,
+        assignedAt: now(),
+        acknowledgedAt: status === "pending_acknowledgement" || status === "draft" ? null : now(),
+        completedAt: status === "completed" ? when.at : null,
+        createdAt: now(),
+        updatedAt: now(),
+      });
+    }
+  }
+  await db.insert(tasks).values(taskRows);
+
+  await db.insert(plannedWork).values(
+    Array.from({ length: 12 }, (_, day) => {
+      const start = klDay(day - 1, 9);
+      const end = klDay(day - 1, 11);
+      return {
+        id: newId(),
+        personId: roleIds[day % roleIds.length],
+        projectId: project?.id,
+        title: `Demo planned block ${start.ymd}`,
+        workType: "Planned Task Work",
+        startAt: start.at,
+        endAt: end.at,
+        notes: "Sample planned working time. It does not move the official deadline.",
+        createdAt: now(),
+      };
+    }),
+  );
+
+  await db.insert(calendarEvents).values(
+    Array.from({ length: 12 }, (_, day) => {
+      const start = klDay(day - 1, 14);
+      const end = klDay(day - 1, 15);
+      return {
+        id: newId(),
+        title: day % 2 === 0 ? `Demo coverage ${start.ymd}` : `Demo meeting ${start.ymd}`,
+        kind: day % 2 === 0 ? "coverage" : "meeting",
+        startAt: start.at,
+        endAt: end.at,
+        ownerId: roleIds[day % roleIds.length],
+        tentative: false,
+        createdAt: now(),
+      };
+    }),
+  );
+
+  await db.insert(contents).values(
+    [0, 2, 4, 6, 8, 10].map((day) => {
+      const when = klDay(day - 1, 16);
+      return {
+        id: newId(),
+        title: `Demo post ${when.ymd}`,
+        pillar: "Brand",
+        platform: day % 4 === 0 ? "instagram" : "facebook",
+        contentType: "post",
+        projectId: project?.id,
+        ownerId: byEmail["staff@demo.kagum.local"],
+        creatorId: byEmail["staff@demo.kagum.local"],
+        stage: "planned",
+        brief: "Sample content so the calendar can show a planned publish time.",
+        plannedPublishAt: when.at,
+        createdAt: now(),
+        updatedAt: now(),
+      };
+    }),
+  );
+
+  await db.insert(timeEntries).values(
+    [0, 3, 6, 9].map((day) => {
+      const when = klDay(day - 1, 11);
+      return {
+        id: newId(),
+        personId: byEmail["staff@demo.kagum.local"],
+        projectId: project?.id,
+        workDate: when.ymd,
+        plannedMinutes: 60,
+        actualMinutes: 45,
+        notes: "Sample time log.",
+        createdAt: now(),
+      };
+    }),
+  );
+
+  await db.insert(announcements).values([
+    {
+      id: newId(),
+      title: "Studio shoot this week",
+      body: "Demo event notice. Bring the booked camera back to the studio after the shoot.",
+      kind: "event_notice",
+      requiresParticipation: false,
+      createdById: byEmail["management@demo.kagum.local"],
+      startsAt: klDay(1, 9).at,
+      endsAt: klDay(2, 18).at,
+      status: "published",
+      createdAt: now(),
+    },
+    {
+      id: newId(),
+      title: "Team briefing attendance",
+      body: "Demo participation post. Confirm you can join the Friday briefing.",
+      kind: "participation",
+      requiresParticipation: true,
+      createdById: byEmail["executive@demo.kagum.local"],
+      startsAt: klDay(2, 9).at,
+      status: "published",
+      createdAt: now(),
+    },
+    {
+      id: newId(),
+      title: "Campaign folder is ready",
+      body: "Demo announcement. The Q3 campaign folder is the working set for this sample project.",
+      kind: "announcement",
+      requiresParticipation: false,
+      createdById: byEmail["management@demo.kagum.local"],
+      startsAt: now(),
+      status: "published",
+      createdAt: now(),
+    },
+  ]);
+
+  await db.insert(knowledgeArticles).values([
+    {
+      id: newId(),
+      title: "How to acknowledge a task",
+      category: "SOP",
+      body: "Open the task, read the official deadline, and acknowledge it before starting work. Planned time on the calendar does not change the deadline.",
+      ownerId: byEmail["management@demo.kagum.local"],
+      status: "published",
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    {
+      id: newId(),
+      title: "Content publish checklist",
+      category: "Guide",
+      body: "A content record moves through planning, production, QC, and approval before it is ready to post. Planned publish time is not the same as a published post.",
+      ownerId: byEmail["executive@demo.kagum.local"],
+      status: "published",
+      createdAt: now(),
+      updatedAt: now(),
+    },
+    {
+      id: newId(),
+      title: "Equipment return rule",
+      category: "SOP",
+      body: "Borrowed equipment is returned to its listed location. Condition is recorded on the equipment record, not in a chat message.",
+      ownerId: byEmail["admin@demo.kagum.local"],
+      status: "published",
+      createdAt: now(),
+      updatedAt: now(),
+    },
+  ]);
+
+  await db.insert(settings).values({
+    id: newId(),
+    key: "demo_workspace_fill",
+    value: "1",
+    updatedAt: now(),
+  });
+  console.log("Demo calendar, kanban, notices, and knowledge records added.");
+}
 
 async function main() {
   const db = createDb();
   const existing = await db.select().from(roles).limit(1);
   if (existing.length) {
+    await seedDemoWorkspace(db);
     console.log("Seed skipped: roles already exist.");
     return;
   }
@@ -40,8 +278,9 @@ async function main() {
     name: key,
     description: key,
   }));
-  await db.insert(permissions).values(permissionRows);
-  const permByKey = Object.fromEntries(permissionRows.map((p) => [p.key, p.id]));
+  await db.insert(permissions).values(permissionRows).onConflictDoNothing({ target: permissions.key });
+  const storedPermissions = await db.select({ id: permissions.id, key: permissions.key }).from(permissions);
+  const permByKey = Object.fromEntries(storedPermissions.map((p) => [p.key, p.id]));
 
   const roleRows = [
     { key: "system_admin", name: "System Admin", sortOrder: 0 },
@@ -254,6 +493,7 @@ async function main() {
     createdAt: now(),
   });
 
+  await seedDemoWorkspace(db);
   console.log("Demo seed complete. Password for all demo accounts:", DEMO_PASSWORD);
 }
 

@@ -1,10 +1,28 @@
 import { getAuthContext } from "@/lib/auth/context";
 import { dashboardData } from "@/lib/queries";
-import { Badge, Card, EmptyState, PageHeader, statusTone } from "@/components/ui";
+import { Badge, Card, EmptyState, statusTone } from "@/components/ui";
+import { Illustration } from "@/components/illustrations";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { NoticeCarousel } from "@/components/notice-carousel";
+
+function greeting(now = new Date()) {
+  const hour = Number(
+    new Intl.DateTimeFormat("en-MY", { timeZone: "Asia/Kuala_Lumpur", hour: "numeric", hourCycle: "h23" }).format(now),
+  );
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
+function isSameLocalDay(value: Date | string | null | undefined, now = new Date()) {
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
+  return fmt.format(date) === fmt.format(now);
+}
 
 export default async function DashboardPage() {
   const ctx = await getAuthContext();
@@ -17,10 +35,39 @@ export default async function DashboardPage() {
     month: "long",
     year: "numeric",
   }).format(new Date());
+  const name = ctx.person.preferredName ?? ctx.person.fullName;
+  const dueToday = data.upcoming.filter((task) => isSameLocalDay(task.officialDeadline)).length;
+  const stages = data.contentPipeline.reduce<Record<string, number>>((counts, item) => {
+    counts[item.stage] = (counts[item.stage] ?? 0) + 1;
+    return counts;
+  }, {});
 
   return (
     <div>
-      <PageHeader title={`Hello, ${ctx.person.preferredName ?? ctx.person.fullName}`} description={date} />
+      <section className="kagum-hero mb-6 rounded-[22px] border border-border px-5 py-5 shadow-[var(--shadow-card)] sm:px-6">
+        <div className="relative z-10 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-primary">KAGUM ONE</p>
+            <h1 className="mt-1 text-2xl font-bold tracking-tight sm:text-[30px]">
+              {greeting()}, {name}
+            </h1>
+            <p className="mt-1 text-sm text-secondary">Here&apos;s what&apos;s happening in KAGUM today.</p>
+            <p className="mt-3 text-sm font-medium text-text">{date}</p>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link className="rounded-[12px] bg-primary px-3 py-2 text-sm font-semibold text-white" href="/my-tasks">
+                My tasks
+              </Link>
+              <Link className="rounded-[12px] border border-border bg-surface px-3 py-2 text-sm font-semibold" href="/calendar">
+                Calendar
+              </Link>
+              <Link className="rounded-[12px] border border-border bg-surface px-3 py-2 text-sm font-semibold" href="/projects">
+                Projects
+              </Link>
+            </div>
+          </div>
+          <Illustration name="dashboard" className="h-28 w-44 shrink-0" />
+        </div>
+      </section>
       <div className="mb-6">
         <NoticeCarousel
           notices={data.notices.map((n) => ({
@@ -32,34 +79,62 @@ export default async function DashboardPage() {
           }))}
         />
       </div>
-      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <p className="text-xs text-secondary">My open tasks</p>
-          <p className="mt-1 text-2xl font-semibold">{data.myTaskCount}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-secondary">Pending acknowledgement</p>
-          <p className="mt-1 text-2xl font-semibold">{data.pendingAck.length}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-secondary">Overdue (official deadline)</p>
-          <p className="mt-1 text-2xl font-semibold text-error">{data.overdue.length}</p>
-        </Card>
-        <Card>
-          <p className="text-xs text-secondary">Active projects</p>
-          <p className="mt-1 text-2xl font-semibold">{data.activeProjects.length}</p>
-        </Card>
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <Link href="/my-tasks">
+          <Card accent="yellow">
+            <p className="text-xs font-medium uppercase tracking-wide text-secondary">My open tasks</p>
+            <p className="mt-2 text-3xl font-bold">{data.myTaskCount}</p>
+          </Card>
+        </Link>
+        <Link href="/my-tasks">
+          <Card accent="orange">
+            <p className="text-xs font-medium uppercase tracking-wide text-secondary">Due today</p>
+            <p className="mt-2 text-3xl font-bold">{dueToday}</p>
+          </Card>
+        </Link>
+        <Link href="/my-tasks">
+          <Card accent="red">
+            <p className="text-xs font-medium uppercase tracking-wide text-secondary">Overdue</p>
+            <p className="mt-2 text-3xl font-bold text-error">{data.overdue.length}</p>
+          </Card>
+        </Link>
+        <Link href="/projects">
+          <Card accent="blue">
+            <p className="text-xs font-medium uppercase tracking-wide text-secondary">Active projects</p>
+            <p className="mt-2 text-3xl font-bold">{data.activeProjects.length}</p>
+          </Card>
+        </Link>
       </div>
       <div className="mt-6 grid gap-4 lg:grid-cols-2">
+        <Card accent="yellow">
+          <h2 className="mb-3 text-lg font-bold">Today&apos;s work</h2>
+          {data.inProgress.length === 0 ? (
+            <EmptyState plain title="You're all caught up" body="No assigned tasks are in progress right now." illustration="caught-up" />
+          ) : (
+            <ul className="space-y-2 text-sm">
+              {data.inProgress.slice(0, 6).map((task) => (
+                <li key={task.id} className="flex items-center justify-between gap-2 rounded-[12px] border border-border px-3 py-2">
+                  <Link className="font-medium text-text" href={`/tasks/${task.id}`}>
+                    {task.title}
+                  </Link>
+                  <Badge tone={statusTone(task.status)}>{task.status}</Badge>
+                </li>
+              ))}
+            </ul>
+          )}
+          {data.pendingAck.length > 0 ? (
+            <p className="mt-3 text-sm text-secondary">{data.pendingAck.length} waiting for acknowledgement.</p>
+          ) : null}
+        </Card>
         <Card>
-          <h2 className="mb-3 font-medium">Upcoming deadlines</h2>
+          <h2 className="mb-3 text-lg font-bold">Upcoming deadlines</h2>
           {data.upcoming.length === 0 ? (
-            <EmptyState title="No upcoming deadlines" body="Assigned tasks with official deadlines will appear here." />
+            <EmptyState plain title="No upcoming deadlines" body="Assigned tasks with official deadlines will appear here." />
           ) : (
             <ul className="space-y-2 text-sm">
               {data.upcoming.map((t) => (
                 <li key={t.id} className="flex justify-between gap-2">
-                  <Link className="text-info" href={`/tasks/${t.id}`}>
+                  <Link className="font-medium text-info" href={`/tasks/${t.id}`}>
                     {t.title}
                   </Link>
                   <span className="text-secondary">{formatDate(t.officialDeadline)}</span>
@@ -68,15 +143,44 @@ export default async function DashboardPage() {
             </ul>
           )}
         </Card>
+        <Card accent="purple">
+          <h2 className="mb-3 text-lg font-bold">Content pipeline</h2>
+          {data.contentPipeline.length === 0 ? (
+            <EmptyState plain title="No content records" body="Create content to track planning through publishing." />
+          ) : (
+            <>
+              <div className="mb-3 flex flex-wrap gap-2">
+                {Object.entries(stages).map(([stage, count]) => (
+                  <Badge key={stage} tone={statusTone(stage)}>
+                    {stage} {count}
+                  </Badge>
+                ))}
+              </div>
+              <ul className="space-y-2 text-sm">
+                {data.contentPipeline.slice(0, 6).map((c) => (
+                  <li key={c.id} className="flex justify-between gap-2">
+                    <Link href={`/content/${c.id}`}>{c.title}</Link>
+                    <Badge tone={statusTone(c.stage)}>{c.stage}</Badge>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+        </Card>
         <Card>
-          <h2 className="mb-3 font-medium">Notifications</h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-bold">Notifications</h2>
+            <Link className="text-sm font-semibold text-primary" href="/notifications">
+              View all
+            </Link>
+          </div>
           {data.notifications.length === 0 ? (
-            <EmptyState title="No notifications" body="Events that need your awareness will appear here." />
+            <EmptyState plain title="All quiet here" body="You don't have any new notifications." illustration="quiet" />
           ) : (
             <ul className="space-y-2 text-sm">
               {data.notifications.map((n) => (
                 <li key={n.id}>
-                  <Link className="text-info" href={n.href || "/notifications"}>
+                  <Link className="font-medium text-info" href={n.href || "/notifications"}>
                     {n.title}
                   </Link>
                   <p className="text-secondary">{n.body}</p>
@@ -85,29 +189,21 @@ export default async function DashboardPage() {
             </ul>
           )}
         </Card>
-        <Card>
-          <h2 className="mb-3 font-medium">Content pipeline</h2>
-          {data.contentPipeline.length === 0 ? (
-            <EmptyState title="No content records" body="Create content to track planning through publishing." />
-          ) : (
-            <ul className="space-y-2 text-sm">
-              {data.contentPipeline.slice(0, 6).map((c) => (
-                <li key={c.id} className="flex justify-between">
-                  <Link href={`/content/${c.id}`}>{c.title}</Link>
-                  <Badge tone={statusTone(c.stage)}>{c.stage}</Badge>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Card>
-        <Card>
-          <h2 className="mb-3 font-medium">Team activity</h2>
+        <Card accent="charcoal" className="lg:col-span-2">
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="text-lg font-bold">Recent activity</h2>
+            <Link className="text-sm font-semibold text-primary" href="/activity">
+              History
+            </Link>
+          </div>
           {data.activity.length === 0 ? (
-            <EmptyState title="No activity yet" body="Operational events will be recorded here." />
+            <EmptyState plain title="No activity yet" body="Operational events will be recorded here." illustration="none" />
           ) : (
             <ul className="space-y-2 text-sm text-secondary">
               {data.activity.map((a) => (
-                <li key={a.id}>{a.summary}</li>
+                <li key={a.id} className="border-b border-border pb-2 last:border-0">
+                  {a.summary}
+                </li>
               ))}
             </ul>
           )}

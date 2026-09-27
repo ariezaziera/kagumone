@@ -19,6 +19,7 @@ export default async function SkillsPage() {
   return (
     <div>
       <PageHeader
+        module="skills"
         title="Skills"
         description="Skills are the same categories already used on tasks and content. They are inferred from completed work and write-ups, not from a separate invented list. Levels 1–5 are inferred from how many work records exist; they are not KPI targets and are not verified."
       />

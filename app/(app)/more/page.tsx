@@ -9,7 +9,7 @@ export default async function MorePage() {
   if (!ctx) redirect("/login");
   return (
     <div>
-      <PageHeader title="More" description="Same groups as the sidebar. Open a category on desktop to keep the list short." />
+      <PageHeader module="workspace" title="More" description="Same groups as the sidebar. Open a category on desktop to keep the list short." />
       {NAV_GROUPS.map((g) => {
         const items = g.items.filter((i) => !i.permission || hasPermission(ctx, i.permission));
         if (items.length === 0) return null;

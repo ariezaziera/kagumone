@@ -21,10 +21,10 @@ export default async function TeamPage() {
   ]);
   return (
     <div>
-      <PageHeader title="Team" description="Directory and reporting relationships. The chart visualizes stored data." />
+      <PageHeader module="people" title="Team" description="Directory and reporting relationships. The chart visualizes stored data." />
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         <Table>
-          <thead className="bg-primary-light text-xs uppercase text-secondary">
+          <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
             <tr>
               <th className="px-3 py-2">Name</th>
               <th className="px-3 py-2">Position</th>

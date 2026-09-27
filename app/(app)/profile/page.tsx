@@ -20,14 +20,19 @@ export default async function ProfilePage() {
   ]);
   return (
     <div>
-      <PageHeader title="My Profile" description="Organizational fields can only be changed by authorized users." />
-      <Card className="space-y-1 text-sm">
+      <PageHeader module="people" title="My Profile" description="Organizational fields can only be changed by authorized users." />
+      <Card accent="pink" className="flex flex-col gap-4 text-sm sm:flex-row sm:items-center">
+        <span className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-charcoal text-xl font-bold text-white">
+          {ctx.person.fullName.trim().charAt(0).toUpperCase()}
+        </span>
+        <div className="space-y-1">
         <p>Name: {ctx.person.fullName}</p>
         <p>Email: {ctx.person.email}</p>
         <p>Position: {ctx.person.positionTitle}</p>
         <p>Employment: {ctx.person.employmentType}</p>
         <p>Roles: {ctx.roleKeys.join(", ")}</p>
         <p>Open tasks: {mine.filter((t) => t.status !== "completed").length}</p>
+        </div>
       </Card>
       <Card className="mt-4">
         <h2 className="mb-2 font-medium">Skills from completed work</h2>

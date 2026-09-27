@@ -13,13 +13,13 @@ export default async function ProjectsPage() {
   const [rows, peopleRows] = await Promise.all([listProjects(), listPeople()]);
   return (
     <div>
-      <PageHeader title="Projects" description="Authoritative project records, owners, and timelines." />
+      <PageHeader module="projects" title="Projects" description="Authoritative project records, owners, and timelines." />
       <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
         {rows.length === 0 ? (
-          <EmptyState title="No projects yet" body="Create a project to connect tasks, content, and files." />
+          <EmptyState title="No projects yet" body="Create a project to start capturing the work." />
         ) : (
           <Table>
-            <thead className="bg-primary-light text-xs uppercase text-secondary">
+            <thead className="text-xs font-medium uppercase tracking-wide text-secondary">
               <tr>
                 <th className="px-3 py-2">Name</th>
                 <th className="px-3 py-2">Status</th>
