@@ -257,6 +257,95 @@ tbody tr:hover {
   }
 }
 
+.kagum-table {
+  position: relative;
+  container-type: inline-size;
+  max-width: 100%;
+}
+
+@container (max-width: 480px) {
+  .kagum-table table {
+    display: block;
+    border-spacing: 0;
+  }
+
+  .kagum-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .kagum-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .kagum-table tbody tr {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+  }
+
+  .kagum-table tbody td,
+  .kagum-table tbody tr:hover td {
+    display: block;
+    width: auto;
+    background: transparent;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    border-radius: 0;
+    padding: 0.7rem 0.95rem;
+    overflow-wrap: break-word;
+  }
+
+  .kagum-table tbody td:first-child,
+  .kagum-table tbody tr:hover td:first-child {
+    border-left: 0;
+    background: var(--canvas);
+    padding-left: 0.95rem;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .kagum-table tbody td:last-child {
+    border-right: 0;
+    border-bottom: 0;
+    padding-right: 0.95rem;
+  }
+
+  .kagum-table tbody td::before {
+    content: attr(data-label);
+    display: block;
+    margin-bottom: 0.2rem;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    line-height: 1.4;
+    text-transform: uppercase;
+  }
+
+  .kagum-table tbody td[data-label=""]::before {
+    content: none;
+    margin: 0;
+  }
+}
+
+details[open] > summary.kagum-menu-open {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .kagum-card,
   .kagum-card:hover,

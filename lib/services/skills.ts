@@ -23,6 +23,19 @@ import { newId, now } from "@/lib/utils";
 const TASK_CATEGORY_NAME = "Task work";
 const CONTENT_CATEGORY_NAME = "Content operations";
 
+/** Labels for the existing 1–5 inference. The number is observed work-record count, not a verified rating. */
+export const INFERRED_LEVELS = [
+  { level: 1, label: "Novice" },
+  { level: 2, label: "Basic" },
+  { level: 3, label: "Competent" },
+  { level: 4, label: "Advanced" },
+  { level: 5, label: "Expert" },
+] as const;
+
+export function inferredLevelLabel(level: number) {
+  return INFERRED_LEVELS.find((item) => item.level === level)?.label ?? "Novice";
+}
+
 /** Prompt levels 1–5. Count is observed completed work, not a KPI target. */
 export function inferredLevelFromEvidenceCount(count: number) {
   if (count >= 15) return 5;

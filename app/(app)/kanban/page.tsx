@@ -9,7 +9,7 @@ export default async function KanbanPage() {
       <PageHeader
         module="tasks"
         title="Kanban"
-        description="Drag only allowed transitions. Completing a task still requires a completion record."
+        description="On a phone, use the arrows to move a card. On a larger screen, drag an allowed step. Completing a task still requires a completion record."
       />
       <KanbanBoard tasks={tasks} />
     </div>

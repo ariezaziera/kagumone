@@ -1,6 +1,6 @@
 import { getAuthContext } from "@/lib/auth/context";
 import { dashboardData } from "@/lib/queries";
-import { Badge, BrandWordmark, Card, EmptyState, statusTone } from "@/components/ui";
+import { Badge, BrandWordmark, Card, EmptyState, buttonClass, statusTone } from "@/components/ui";
 import { Illustration } from "@/components/illustrations";
 import { formatDate } from "@/lib/utils";
 import Link from "next/link";
@@ -56,13 +56,13 @@ export default async function DashboardPage() {
             <p className="mt-1.5 text-sm leading-relaxed text-secondary">Here&apos;s what&apos;s happening in KAGUM today.</p>
             <p className="mt-3 text-sm font-medium text-text">{date}</p>
             <div className="mt-4 flex flex-wrap gap-2">
-              <Link className="rounded-[12px] bg-primary px-3 py-2 text-sm font-semibold text-white" href="/my-tasks">
+              <Link className={buttonClass("primary")} href="/my-tasks">
                 My tasks
               </Link>
-              <Link className="rounded-[12px] border border-border bg-surface px-3 py-2 text-sm font-semibold" href="/calendar">
+              <Link className={buttonClass("secondary")} href="/calendar">
                 Calendar
               </Link>
-              <Link className="rounded-[12px] border border-border bg-surface px-3 py-2 text-sm font-semibold" href="/projects">
+              <Link className={buttonClass("secondary")} href="/projects">
                 Projects
               </Link>
             </div>

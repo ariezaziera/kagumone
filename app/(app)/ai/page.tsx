@@ -34,7 +34,12 @@ export default function AiPage() {
                 <button
                   key={prompt}
                   type="button"
-                  className="rounded-full border border-border bg-purple-soft px-3 py-1 text-sm font-medium text-purple"
+                  aria-pressed={question === prompt}
+                  className={`cursor-pointer rounded-full border px-3 py-1 text-sm font-medium transition-colors active:scale-[0.98] motion-reduce:active:scale-100 ${
+                    question === prompt
+                      ? "border-purple bg-purple text-white"
+                      : "border-purple/20 bg-purple-soft text-purple hover:border-purple hover:bg-purple hover:text-white"
+                  }`}
                   onClick={() => setQuestion(prompt)}
                 >
                   {prompt}

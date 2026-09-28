@@ -3,7 +3,7 @@ import { createTask } from "@/lib/actions/core";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { listPeople, listProjects, listTasks } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, statusTone } from "@/components/ui";
+import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, buttonClass, statusTone } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
 import { isTaskOverdue } from "@/lib/permissions";
 import { TASK_CATEGORIES } from "@/lib/permissions";
@@ -38,7 +38,8 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
           <Link
             key={key}
             href={`/tasks?tab=${key}`}
-            className={`rounded-[12px] px-3 py-1.5 text-sm font-medium ${tab === key ? "bg-primary text-white" : "border border-border bg-surface"}`}
+            aria-current={tab === key ? "page" : undefined}
+            className={buttonClass(tab === key ? "primary" : "secondary", "px-3 py-1.5")}
           >
             {label}
           </Link>

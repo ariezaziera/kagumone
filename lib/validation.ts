@@ -101,3 +101,20 @@ export const inviteSchema = z.object({
   fullName: z.string().min(2),
   roleKey: z.string(),
 });
+
+const handoverRefSchema = z.object({
+  label: z.string().trim().min(1),
+  url: z.string().trim().min(1),
+});
+
+export const handoverSchema = z.object({
+  outgoingPersonId: z.string().min(1),
+  incomingPersonId: z.string().min(1).optional(),
+  notes: z.string().optional(),
+  pendingNote: z.string().optional(),
+  projectId: z.string().optional(),
+  projectUpdate: z.string().optional(),
+  templateNote: z.string().optional(),
+  links: z.array(handoverRefSchema).optional(),
+  folders: z.array(handoverRefSchema).optional(),
+});

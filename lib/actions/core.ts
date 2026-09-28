@@ -52,6 +52,7 @@ import {
   contentSchema,
   extensionSchema,
   inviteSchema,
+  handoverSchema,
   plannedWorkSchema,
   projectSchema,
   taskSchema,
@@ -1044,30 +1045,97 @@ export async function logTime(form: FormData) {
   revalidatePath("/time-tracking");
 }
 
+function parseHandoverRefs(value: FormDataEntryValue | null) {
+  if (!value) return [];
+  try {
+    const parsed = JSON.parse(String(value));
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
 export async function createHandover(form: FormData) {
   const ctx = await getAuthContext();
   if (!ctx) throw new Error("You must be signed in.");
+  const parsed = handoverSchema.parse({
+    outgoingPersonId: form.get("outgoingPersonId"),
+    incomingPersonId: String(form.get("incomingPersonId") || "") || undefined,
+    notes: String(form.get("notes") || "") || undefined,
+    pendingNote: String(form.get("pendingNote") || "") || undefined,
+    projectId: String(form.get("projectId") || "") || undefined,
+    projectUpdate: String(form.get("projectUpdate") || "") || undefined,
+    templateNote: String(form.get("templateNote") || "") || undefined,
+    links: parseHandoverRefs(form.get("links")),
+    folders: parseHandoverRefs(form.get("folders")),
+  });
   const id = newId();
   await db.insert(handovers).values({
     id,
-    outgoingPersonId: String(form.get("outgoingPersonId")),
-    incomingPersonId: String(form.get("incomingPersonId") || "") || null,
+    outgoingPersonId: parsed.outgoingPersonId,
+    incomingPersonId: parsed.incomingPersonId ?? null,
     status: "active",
-    notes: String(form.get("notes") || ""),
+    notes: parsed.notes ?? "",
     createdAt: now(),
     updatedAt: now(),
   });
   const outstanding = await db.query.tasks.findMany({
-    where: eq(tasks.assigneeId, String(form.get("outgoingPersonId"))),
+    where: eq(tasks.assigneeId, parsed.outgoingPersonId),
   });
-  for (const t of outstanding.filter((x) => x.status !== "completed")) {
+  for (const task of outstanding.filter((item) => item.status !== "completed")) {
     await db.insert(handoverItems).values({
       id: newId(),
       handoverId: id,
       kind: "task",
       relatedType: "task",
-      relatedId: t.id,
-      summary: `Outstanding: ${t.title} (${t.status})`,
+      relatedId: task.id,
+      summary: `${task.title} (${task.status.replaceAll("_", " ")})`,
+    });
+  }
+  if (parsed.pendingNote) {
+    await db.insert(handoverItems).values({
+      id: newId(),
+      handoverId: id,
+      kind: "pending_note",
+      summary: parsed.pendingNote,
+    });
+  }
+  if (parsed.projectUpdate) {
+    await db.insert(handoverItems).values({
+      id: newId(),
+      handoverId: id,
+      kind: "project_update",
+      relatedType: parsed.projectId ? "project" : null,
+      relatedId: parsed.projectId ?? null,
+      summary: parsed.projectUpdate,
+    });
+  }
+  if (parsed.templateNote) {
+    await db.insert(handoverItems).values({
+      id: newId(),
+      handoverId: id,
+      kind: "template",
+      summary: parsed.templateNote,
+    });
+  }
+  for (const link of parsed.links ?? []) {
+    await db.insert(handoverItems).values({
+      id: newId(),
+      handoverId: id,
+      kind: "link",
+      relatedType: "url",
+      relatedId: link.url,
+      summary: link.label,
+    });
+  }
+  for (const folder of parsed.folders ?? []) {
+    await db.insert(handoverItems).values({
+      id: newId(),
+      handoverId: id,
+      kind: "folder",
+      relatedType: "folder",
+      relatedId: folder.url,
+      summary: folder.label,
     });
   }
   await recordActivity({
@@ -1076,6 +1144,39 @@ export async function createHandover(form: FormData) {
     entityType: "handover",
     entityId: id,
     summary: `${ctx.person.fullName} started a handover`,
+  });
+  if (parsed.incomingPersonId && parsed.incomingPersonId !== ctx.person.id) {
+    await notify({
+      personId: parsed.incomingPersonId,
+      title: "Handover started",
+      body: `${ctx.person.fullName} prepared a handover for you.`,
+      href: "/handover",
+      kind: "handover",
+    });
+  }
+  revalidatePath("/handover");
+  return { id };
+}
+
+export async function addHandoverFile(handoverId: string, fileId: string, filename: string) {
+  const ctx = await getAuthContext();
+  if (!ctx) throw new Error("You must be signed in.");
+  const [handover] = await db.select().from(handovers).where(eq(handovers.id, handoverId));
+  if (!handover) throw new Error("Handover not found.");
+  await db.insert(handoverItems).values({
+    id: newId(),
+    handoverId,
+    kind: "file",
+    relatedType: "file",
+    relatedId: fileId,
+    summary: filename,
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "handover.file_added",
+    entityType: "handover",
+    entityId: handoverId,
+    summary: `${ctx.person.fullName} attached ${filename} to a handover`,
   });
   revalidatePath("/handover");
 }

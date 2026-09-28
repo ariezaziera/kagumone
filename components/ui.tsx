@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, HTMLAttributes, InputHTMLAttributes, SelectHTMLAttributes, TextareaHTMLAttributes } from "react";
+import { Children, cloneElement, isValidElement, type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import {
   BarChart3,
   BookOpen,
@@ -125,27 +125,39 @@ export function PageHeader({
   );
 }
 
+export type ButtonVariant = "primary" | "secondary" | "danger" | "ghost";
+
+const buttonBase =
+  "inline-flex cursor-pointer select-none items-center justify-center gap-1.5 rounded-[12px] border px-3.5 py-2 text-sm font-semibold leading-snug transition-[background-color,border-color,color,box-shadow,transform] duration-150 active:translate-y-px motion-reduce:transition-none motion-reduce:active:translate-y-0 disabled:pointer-events-none disabled:opacity-50 disabled:active:translate-y-0";
+
+const buttonStyles: Record<ButtonVariant, string> = {
+  primary:
+    "border-primary bg-primary text-white shadow-[0_1px_0_rgb(17_17_17/12%)] hover:border-primary-dark hover:bg-primary-dark active:border-[#8e0d13] active:bg-[#8e0d13] active:shadow-none",
+  secondary:
+    "border-border bg-surface text-text shadow-[0_1px_0_rgb(17_17_17/4%)] hover:border-[#f0b4b6] hover:bg-primary-light active:border-[#e7a0a3] active:bg-[#f8d4d6] active:shadow-none",
+  danger:
+    "border-error bg-error text-white shadow-[0_1px_0_rgb(17_17_17/12%)] hover:border-[#8e0d13] hover:bg-[#8e0d13] active:border-[#7a0b10] active:bg-[#7a0b10] active:shadow-none",
+  ghost:
+    "border-transparent bg-transparent text-secondary shadow-none hover:bg-canvas hover:text-text active:bg-charcoal-soft",
+};
+
+export function buttonClass(variant: ButtonVariant = "primary", className?: string) {
+  return cn(buttonBase, buttonStyles[variant], className);
+}
+
+export function iconButtonClass(className?: string) {
+  return cn(
+    "inline-flex cursor-pointer items-center justify-center rounded-[12px] text-charcoal transition-colors hover:bg-canvas active:scale-95 active:bg-charcoal-soft motion-reduce:transition-none motion-reduce:active:scale-100",
+    className,
+  );
+}
+
 export function Button({
   className,
   variant = "primary",
   ...props
-}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: "primary" | "secondary" | "danger" | "ghost" }) {
-  const styles = {
-    primary: "bg-primary text-white hover:bg-primary-dark",
-    secondary: "border border-border bg-surface text-text hover:bg-primary-light",
-    danger: "bg-error text-white hover:opacity-90",
-    ghost: "text-secondary hover:bg-primary-light",
-  } as const;
-  return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center rounded-[12px] px-3.5 py-2 text-sm font-semibold transition-colors disabled:opacity-50",
-        styles[variant],
-        className,
-      )}
-      {...props}
-    />
-  );
+}: ButtonHTMLAttributes<HTMLButtonElement> & { variant?: ButtonVariant }) {
+  return <button className={buttonClass(variant, className)} {...props} />;
 }
 
 const controlClass = "w-full rounded-[12px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-primary";
@@ -288,10 +300,53 @@ export function EmptyState({
   return <Card className="flex flex-col items-center px-6 py-8 text-center">{content}</Card>;
 }
 
-export function Table({ children }: { children: React.ReactNode }) {
+function textOf(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number") return String(node);
+  if (Array.isArray(node)) return node.map(textOf).join("");
+  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
+  return "";
+}
+
+function collectHeaders(node: ReactNode, into: string[]) {
+  if (!isValidElement<{ children?: ReactNode }>(node)) return;
+  if (node.type === "th") {
+    into.push(textOf(node.props.children).replace(/\s+/g, " ").trim());
+    return;
+  }
+  Children.forEach(node.props.children, (child) => collectHeaders(child, into));
+}
+
+function stampRow(row: ReactElement<{ children?: ReactNode }>, headers: string[]) {
+  let index = 0;
+  const children = Children.map(row.props.children, (cell) => {
+    if (!isValidElement<{ children?: ReactNode }>(cell) || cell.type !== "td") return cell;
+    const label = headers[index] ?? "";
+    index += 1;
+    return cloneElement(cell, { "data-label": label } as { children?: ReactNode });
+  });
+  return cloneElement(row, undefined, children);
+}
+
+function stampBody(node: ReactNode, headers: string[]): ReactNode {
+  if (!isValidElement<{ children?: ReactNode }>(node)) return node;
+  if (node.type === "tr") return stampRow(node, headers);
+  if (node.type === "tbody") {
+    const children = Children.map(node.props.children, (child) => stampBody(child, headers));
+    return cloneElement(node, undefined, children);
+  }
+  return node;
+}
+
+export function Table({ children }: { children: ReactNode }) {
+  const headers: string[] = [];
+  Children.forEach(children, (child) => {
+    if (isValidElement(child) && child.type === "thead") collectHeaders(child, headers);
+  });
+  const stamped = Children.map(children, (child) => stampBody(child, headers));
   return (
-    <div className="kagum-table overflow-x-auto">
-      <table className="min-w-[36rem] text-left text-[13px]">{children}</table>
+    <div className="kagum-table">
+      <table className="w-full text-left text-[13px]">{stamped}</table>
     </div>
   );
 }

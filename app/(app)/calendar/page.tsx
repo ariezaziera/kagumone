@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { calendarEvents, contents, plannedWork, tasks, timeEntries } from "@/lib/db/schema";
-import { Card, PageHeader } from "@/components/ui";
+import { Card, PageHeader, iconButtonClass } from "@/components/ui";
 import { cn, formatDateTime } from "@/lib/utils";
 import { listProjects, listTasks } from "@/lib/queries";
 import { PlannedWorkForm } from "@/components/planned-work-form";
@@ -167,11 +167,11 @@ export default async function CalendarPage({
         actions={
           <div className="flex flex-col gap-3 sm:items-end">
             <div className="flex items-center gap-2">
-              <Link href={href(view, previous)} aria-label="Previous" className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-charcoal">
+              <Link href={href(view, previous)} aria-label="Previous" className={iconButtonClass("h-9 w-9 rounded-full border border-border bg-surface hover:border-[#f0b4b6] hover:bg-primary-light")}>
                 <ChevronLeft size={16} />
               </Link>
               <p className="min-w-36 text-center text-sm font-semibold">{view === "day" ? selectedLabel : rangeLabel}</p>
-              <Link href={href(view, next)} aria-label="Next" className="flex h-9 w-9 items-center justify-center rounded-full border border-border bg-surface text-charcoal">
+              <Link href={href(view, next)} aria-label="Next" className={iconButtonClass("h-9 w-9 rounded-full border border-border bg-surface hover:border-[#f0b4b6] hover:bg-primary-light")}>
                 <ChevronRight size={16} />
               </Link>
             </div>
@@ -181,9 +181,10 @@ export default async function CalendarPage({
                   <Link
                     key={key}
                     href={href(key, selected)}
+                    aria-current={view === key ? "page" : undefined}
                     className={cn(
-                      "rounded-full px-3 py-1.5 text-sm font-semibold capitalize",
-                      view === key ? "bg-primary text-white" : "text-secondary",
+                      "cursor-pointer rounded-full px-3 py-1.5 text-sm font-semibold capitalize transition-colors active:scale-[0.98] motion-reduce:active:scale-100",
+                      view === key ? "bg-primary text-white shadow-[0_1px_0_rgb(17_17_17/12%)]" : "text-secondary hover:bg-surface hover:text-text",
                     )}
                   >
                     {key}

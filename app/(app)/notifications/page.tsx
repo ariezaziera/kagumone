@@ -3,7 +3,7 @@ import { markNotificationsRead } from "@/lib/actions/core";
 import { getAuthContext } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
-import { Button, Card, EmptyState, PageHeader } from "@/components/ui";
+import { Button, Card, EmptyState, PageHeader, buttonClass } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -37,10 +37,23 @@ export default async function NotificationsPage({ searchParams }: { searchParams
           </form>
         }
       />
-      <div className="mb-3 flex gap-2 text-sm">
-        <Link href="/notifications?filter=all">All</Link>
-        <Link href="/notifications?filter=unread">Unread</Link>
-        <Link href="/notifications?filter=attention">Needs attention</Link>
+      <div className="mb-4 flex flex-wrap gap-2">
+        {(
+          [
+            ["all", "All"],
+            ["unread", "Unread"],
+            ["attention", "Needs attention"],
+          ] as const
+        ).map(([key, label]) => (
+          <Link
+            key={key}
+            href={`/notifications?filter=${key}`}
+            aria-current={filter === key ? "page" : undefined}
+            className={buttonClass(filter === key ? "primary" : "secondary", "px-3 py-1.5")}
+          >
+            {label}
+          </Link>
+        ))}
       </div>
       {filtered.length === 0 ? (
         <EmptyState title="All quiet here" body="You don't have any new notifications." illustration="quiet" />

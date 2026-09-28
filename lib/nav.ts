@@ -101,7 +101,6 @@ export const MOBILE_NAV = [
   { href: "/my-tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
   { href: "/notifications", label: "Notifications" },
-  { href: "/more", label: "More" },
 ];
 
 export function navItemIsActive(pathname: string, href: string) {

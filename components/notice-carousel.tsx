@@ -56,7 +56,8 @@ export function NoticeCarousel({ notices }: { notices: NoticeSlide[] }) {
               key={n.id}
               type="button"
               aria-label={`Show notice ${i + 1}`}
-              className={`h-2 flex-1 rounded-full ${i === index ? "bg-info" : "bg-border"}`}
+              aria-pressed={i === index}
+              className={`h-2 flex-1 cursor-pointer rounded-full transition-colors active:scale-95 motion-reduce:active:scale-100 ${i === index ? "bg-primary" : "bg-border hover:bg-charcoal"}`}
               onClick={() => setIndex(i)}
             />
           ))}

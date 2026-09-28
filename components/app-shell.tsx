@@ -24,7 +24,6 @@ import {
   ListChecks,
   Megaphone,
   Menu,
-  PanelLeft,
   Plus,
   Send,
   Settings,
@@ -37,7 +36,7 @@ import {
 import { NAV_GROUPS, MOBILE_NAV, navItemIsActive, type NavGroup } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
-import { BrandWordmark, Button } from "@/components/ui";
+import { BrandWordmark, Button, buttonClass, iconButtonClass } from "@/components/ui";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
@@ -66,7 +65,6 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/profile": CircleUser,
   "/settings": Settings,
   "/knowledge": BookOpen,
-  "/more": Menu,
 };
 
 const MOBILE_ICONS: Record<string, LucideIcon> = {
@@ -74,19 +72,16 @@ const MOBILE_ICONS: Record<string, LucideIcon> = {
   "/my-tasks": ListChecks,
   "/calendar": CalendarDays,
   "/notifications": Bell,
-  "/more": Menu,
 };
 
 function SidebarGroup({
   group,
   pathname,
   can,
-  compact,
 }: {
   group: NavGroup;
   pathname: string;
   can: (perm?: string) => boolean;
-  compact: boolean;
 }) {
   const items = group.items.filter((item) => can(item.permission));
   const active = items.some((item) => navItemIsActive(pathname, item.href));
@@ -100,11 +95,11 @@ function SidebarGroup({
 
   const linkClass = (href: string) =>
     cn(
-      "flex items-center gap-2 rounded-[12px] px-2 py-1.5 text-sm",
-      navItemIsActive(pathname, href) ? "bg-primary-light font-semibold text-primary" : "text-secondary hover:bg-canvas",
+      "flex items-center gap-2 rounded-[12px] px-2 py-1.5 text-sm transition-colors",
+      navItemIsActive(pathname, href) ? "bg-primary-light font-semibold text-primary" : "text-secondary hover:bg-canvas active:bg-charcoal-soft",
     );
 
-  if (group.collapsible === false || compact) {
+  if (group.collapsible === false) {
     return (
       <ul className="space-y-0.5">
         {items.map((item) => {
@@ -113,7 +108,7 @@ function SidebarGroup({
             <li key={item.href}>
               <Link href={item.href} className={linkClass(item.href)} title={item.label}>
                 <Icon size={16} aria-hidden />
-                <span className={cn(compact && "lg:sr-only")}>{item.label}</span>
+                {item.label}
               </Link>
             </li>
           );
@@ -128,8 +123,8 @@ function SidebarGroup({
       <button
         type="button"
         className={cn(
-          "flex w-full items-center justify-between rounded-[12px] px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em]",
-          active ? "text-primary" : "text-muted hover:bg-canvas hover:text-secondary",
+          "flex w-full cursor-pointer items-center justify-between rounded-[12px] px-2 py-1.5 text-left text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors",
+          active ? "text-primary" : "text-muted hover:bg-canvas hover:text-secondary active:bg-charcoal-soft",
         )}
         aria-expanded={open}
         aria-controls={panelId}
@@ -172,7 +167,6 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(false);
   const can = (perm?: string) => !perm || permissions.includes(perm);
   const initial = personName.trim().charAt(0).toUpperCase() || "K";
 
@@ -191,38 +185,37 @@ export function AppShell({
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="flex h-dvh flex-col overflow-hidden bg-background">
       {isDev ? (
-        <div className="bg-charcoal px-4 py-1 text-center text-xs text-white">
+        <div className="shrink-0 bg-charcoal px-4 py-1 text-center text-xs text-white">
           Development environment — demo personas are not production people.
         </div>
       ) : null}
       {open ? (
-        <button className="fixed inset-0 z-30 bg-black/40 lg:hidden" aria-label="Close menu" onClick={() => setOpen(false)} />
+        <button className="fixed inset-0 z-30 cursor-pointer bg-black/40 lg:hidden" aria-label="Close menu" onClick={() => setOpen(false)} />
       ) : null}
-      <div className="flex">
+      <div className="flex min-h-0 flex-1">
         <aside
           className={cn(
-            "fixed inset-y-0 z-40 flex w-64 flex-col border-r border-border bg-surface lg:static",
-            collapsed && "lg:w-[76px]",
+            "fixed inset-y-0 z-40 flex w-64 flex-col border-r border-border bg-surface lg:static lg:h-full lg:shrink-0",
             open ? "flex" : "hidden lg:flex",
           )}
         >
           <div className="flex items-center justify-between gap-2 px-3 py-4">
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2">
               <Image src="/kagum-mark.png" alt="" width={40} height={40} className="h-10 w-10 shrink-0 object-contain" />
-              <span className={cn("truncate", collapsed && "lg:hidden")}>
+              <span className="truncate">
                 <span className="block text-[10px] font-semibold uppercase tracking-[0.16em] text-text">KAGUM</span>
                 <span className="block text-sm font-bold text-primary">ONE</span>
               </span>
             </Link>
-            <button className="lg:hidden" onClick={() => setOpen(false)} aria-label="Close menu">
+            <button className={iconButtonClass("p-1.5 lg:hidden")} onClick={() => setOpen(false)} aria-label="Close menu">
               <X size={18} />
             </button>
           </div>
           <nav className="flex-1 space-y-3 overflow-y-auto px-3 pb-4">
             {NAV_GROUPS.map((group) => (
-              <SidebarGroup key={group.id} group={group} pathname={pathname} can={can} compact={collapsed} />
+              <SidebarGroup key={group.id} group={group} pathname={pathname} can={can} />
             ))}
           </nav>
           <div className="border-t border-border p-3 lg:hidden">
@@ -234,19 +227,10 @@ export function AppShell({
               Sign out
             </Button>
           </div>
-          <button
-            type="button"
-            className="m-3 hidden items-center gap-2 rounded-[12px] px-2 py-2 text-sm text-secondary hover:bg-canvas lg:flex"
-            onClick={() => setCollapsed((value) => !value)}
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <PanelLeft size={16} />
-            <span className={cn(collapsed && "lg:hidden")}>Collapse</span>
-          </button>
         </aside>
-        <div className="min-h-screen min-w-0 flex-1">
-          <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-surface/95 px-3 py-2.5 backdrop-blur-sm sm:gap-3 sm:px-4 sm:py-3">
-            <button className="rounded-[12px] p-1 text-charcoal lg:hidden" onClick={() => setOpen(true)} aria-label="Open menu">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+          <header className="z-20 flex shrink-0 items-center gap-2 border-b border-border bg-surface px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
+            <button className={iconButtonClass("p-1.5 lg:hidden")} onClick={() => setOpen(true)} aria-label="Open menu">
               <Menu size={18} />
             </button>
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2 lg:hidden">
@@ -258,19 +242,19 @@ export function AppShell({
               <span className="truncate">{personName}</span>
             </p>
             <div className="ml-auto flex items-center gap-1">
-            <Link href="/notifications" aria-label="Notifications" className="rounded-[12px] p-2 text-charcoal hover:bg-primary-light">
+            <Link href="/notifications" aria-label="Notifications" className={iconButtonClass("p-2")}>
               <Bell size={18} />
             </Link>
             <details className="relative">
-              <summary className="flex cursor-pointer list-none items-center gap-1 rounded-[12px] bg-primary px-2.5 py-1.5 text-sm font-semibold text-white sm:px-3">
+              <summary className={buttonClass("primary", "kagum-menu-open list-none px-2.5 py-1.5 sm:px-3")}>
                 <Plus size={14} /> <span className="hidden sm:inline">New</span>
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-52 rounded-[16px] border border-border bg-surface p-2 text-sm shadow-[var(--shadow-lift)]">
-                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/tasks">Create Task</Link> : null}
-                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/projects">New Project</Link> : null}
-                {can("content:create") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/content">Add Content</Link> : null}
-                {can("announcement:create") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/notices">Post Notice</Link> : null}
-                {can("equipment:borrow") ? <Link className="block rounded-[10px] px-2 py-1.5 hover:bg-primary-light" href="/equipment">Borrow Equipment</Link> : null}
+                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/tasks">Create Task</Link> : null}
+                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/projects">New Project</Link> : null}
+                {can("content:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/content">Add Content</Link> : null}
+                {can("announcement:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/notices">Post Notice</Link> : null}
+                {can("equipment:borrow") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/equipment">Borrow Equipment</Link> : null}
               </div>
             </details>
             <Button variant="ghost" className="hidden lg:inline-flex" onClick={signOut}>
@@ -278,10 +262,10 @@ export function AppShell({
             </Button>
             </div>
           </header>
-          <main className="px-4 py-5 pb-28 lg:px-8 lg:py-6 lg:pb-6">{children}</main>
+          <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-28 lg:px-8 lg:py-6 lg:pb-6">{children}</main>
         </div>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-border bg-surface pb-[max(0.35rem,env(safe-area-inset-bottom))] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-surface pb-[max(0.35rem,env(safe-area-inset-bottom))] lg:hidden">
         {MOBILE_NAV.map((item) => {
           const Icon = MOBILE_ICONS[item.href] ?? Menu;
           const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
@@ -289,9 +273,19 @@ export function AppShell({
             <Link
               key={item.href}
               href={item.href}
-              className={cn("flex flex-col items-center gap-1 px-1 py-2 text-center text-[10px] font-medium leading-snug", active ? "text-primary" : "text-secondary")}
+              className={cn(
+                "group flex flex-col items-center gap-0.5 px-1 py-1.5 text-center text-[10px] font-medium leading-snug transition-colors",
+                active ? "text-primary" : "text-secondary hover:text-text",
+              )}
             >
-              <Icon size={18} aria-hidden />
+              <span
+                className={cn(
+                  "flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors",
+                  active ? "bg-primary-light" : "group-hover:bg-canvas group-active:bg-charcoal-soft",
+                )}
+              >
+                <Icon size={18} aria-hidden />
+              </span>
               {item.label}
             </Link>
           );
