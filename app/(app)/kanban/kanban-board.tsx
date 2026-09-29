@@ -7,7 +7,8 @@ import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSe
 import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { TASK_STATUSES, canTransitionTask, type TaskStatus } from "@/lib/permissions";
-import { Badge, Card, iconButtonClass, statusTone } from "@/components/ui";
+import { Badge, iconButtonClass, statusTone } from "@/components/ui";
+import { DeadlineStamp, priorityBar, statusFace } from "@/components/work-surface";
 import { cn, formatDate, readableLabel } from "@/lib/utils";
 import { transitionTask } from "@/lib/actions/core";
 
@@ -17,6 +18,9 @@ type CardTask = {
   status: string;
   priority: string;
   officialDeadline: Date | string | null;
+  assigneeName: string | null;
+  category: string | null;
+  overdue: boolean;
 };
 
 function statusLabel(status: string) {
@@ -65,7 +69,7 @@ export function KanbanBoard({ tasks }: { tasks: CardTask[] }) {
 
   return (
     <DndContext sensors={sensors} onDragEnd={onDragEnd}>
-      <div className="flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-2 md:grid md:snap-none md:grid-cols-2 md:overflow-visible xl:grid-cols-3">
+      <div className="flex w-full min-w-0 snap-x snap-mandatory gap-3 overflow-x-auto pb-3">
         {TASK_STATUSES.map((status) => (
           <Column
             key={status}
@@ -92,19 +96,32 @@ function Column({
   onMove: (id: string, next: TaskStatus) => Promise<void>;
 }) {
   const { setNodeRef, isOver } = useDroppable({ id: status });
+  const face = statusFace(status);
   return (
-    <Card className={cn("min-w-full shrink-0 snap-start md:min-w-0", isOver && "ring-2 ring-info")}>
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold capitalize">{statusLabel(status)}</h2>
-        <span className="text-xs font-semibold text-muted">{tasks.length}</span>
-      </div>
-      <div ref={setNodeRef} className="min-h-24 space-y-2">
-        {tasks.length === 0 ? <p className="text-sm text-secondary">No tasks</p> : null}
+    <section
+      className={cn(
+        "flex min-h-[420px] w-[min(100%,320px)] shrink-0 snap-start flex-col overflow-hidden rounded-[18px] border border-border bg-canvas/70",
+        isOver && "ring-2 ring-info",
+      )}
+    >
+      <header className={cn("flex items-start justify-between gap-2 px-3 py-3", face.wash)}>
+        <div className="min-w-0">
+          <span className={cn("mb-1.5 block h-1.5 w-8 rounded-full", face.bar)} />
+          <h2 className="text-sm font-bold leading-snug text-text">{statusLabel(status)}</h2>
+        </div>
+        <span className="rounded-full bg-surface px-2 py-0.5 text-xs font-bold text-text">{tasks.length}</span>
+      </header>
+      <div ref={setNodeRef} className="flex flex-1 flex-col gap-2 p-2">
+        {tasks.length === 0 ? (
+          <p className="m-1 rounded-[14px] border border-dashed border-border px-3 py-6 text-center text-xs leading-relaxed text-muted">
+            Nothing in this lane
+          </p>
+        ) : null}
         {tasks.map((task) => (
           <KanbanCard key={task.id} task={task} mobile={mobile} onMove={onMove} />
         ))}
       </div>
-    </Card>
+    </section>
   );
 }
 
@@ -140,29 +157,40 @@ function KanbanCard({
       ref={setNodeRef}
       style={{ transform: CSS.Translate.toString(transform) }}
       className={cn(
-        "rounded-[12px] border border-border bg-canvas px-3 py-2.5 text-sm",
+        "relative overflow-hidden rounded-[14px] border border-border bg-surface px-3 py-2.5 text-sm shadow-[var(--shadow-card)]",
         !mobile && "cursor-grab active:cursor-grabbing",
         isDragging && "opacity-70",
       )}
       {...(mobile ? {} : { ...listeners, ...attributes })}
     >
-      <Link
-        href={`/tasks/${task.id}`}
-        className="font-medium text-text"
-        onPointerDown={(event) => event.stopPropagation()}
-      >
-        {task.title}
-      </Link>
-      <div className="mt-2 flex items-center justify-between gap-2">
+      <span className={cn("absolute inset-y-0 left-0 w-1", priorityBar(task.priority))} aria-hidden />
+      <div className="flex items-start gap-2 pl-1.5">
+        <DeadlineStamp value={task.officialDeadline} overdue={task.overdue} size="sm" />
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/tasks/${task.id}`}
+            className="line-clamp-3 font-semibold leading-snug text-text hover:text-primary"
+            onPointerDown={(event) => event.stopPropagation()}
+          >
+            {task.title}
+          </Link>
+          <p className="mt-1 truncate text-xs text-secondary">{task.assigneeName ?? "Unassigned"}</p>
+        </div>
+      </div>
+      <div className="mt-2 flex flex-wrap items-center gap-1.5 pl-1.5">
         <Badge tone={statusTone(task.priority)}>{task.priority}</Badge>
-        <span className="shrink-0 text-xs text-secondary">{formatDate(task.officialDeadline)}</span>
+        {task.overdue ? <Badge tone="error">Overdue</Badge> : null}
+        {task.category ? <span className="text-[11px] font-medium text-muted">{readableLabel(task.category)}</span> : null}
+        <span className={cn("ml-auto text-[11px] font-semibold", task.overdue ? "text-error" : "text-secondary")}>
+          {formatDate(task.officialDeadline)}
+        </span>
       </div>
       {previous || next ? (
         <div className="mt-2 flex gap-2 md:hidden">
           {previous ? (
             <button
               type="button"
-              className={iconButtonClass("mr-auto h-8 gap-1 border border-border bg-surface px-2 text-xs font-semibold capitalize disabled:opacity-50")}
+              className={iconButtonClass("mr-auto h-8 gap-1 border border-border bg-canvas px-2 text-xs font-semibold disabled:opacity-50")}
               aria-label={`Move to ${statusLabel(previous)}`}
               disabled={pending}
               onPointerDown={(event) => event.stopPropagation()}
@@ -175,7 +203,7 @@ function KanbanCard({
           {next ? (
             <button
               type="button"
-              className={iconButtonClass("ml-auto h-8 gap-1 border border-border bg-surface px-2 text-xs font-semibold capitalize disabled:opacity-50")}
+              className={iconButtonClass("ml-auto h-8 gap-1 border border-border bg-canvas px-2 text-xs font-semibold disabled:opacity-50")}
               aria-label={`Move to ${statusLabel(next)}`}
               disabled={pending}
               onPointerDown={(event) => event.stopPropagation()}
