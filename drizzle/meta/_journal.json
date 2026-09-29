@@ -15,6 +15,13 @@
       "when": 1790400000000,
       "tag": "0001_work_task_notice",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1790500000000,
+      "tag": "0002_account_username",
+      "breakpoints": true
     }
   ]
 }

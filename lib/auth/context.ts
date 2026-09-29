@@ -71,6 +71,7 @@ export function hasPermission(ctx: AuthContext, permission: Permission) {
 
 export function requirePermission(ctx: AuthContext | null, permission: Permission) {
   if (!ctx) throw new Error("You must be signed in.");
+  if (ctx.person.mustChangePassword) throw new Error("Set a new password before continuing.");
   if (!hasPermission(ctx, permission)) {
     throw new Error("You are not authorized to perform this action.");
   }

@@ -15,7 +15,6 @@ import {
   files,
   handovers,
   handoverItems,
-  invitations,
   knowledgeArticles,
   knowledgeVersions,
   kpiHistory,
@@ -38,6 +37,7 @@ import {
   tasks,
   timeEntries,
   employmentHistory,
+  user as authUser,
 } from "@/lib/db/schema";
 import { getAuthContext, requirePermission, hasPermission } from "@/lib/auth/context";
 import { recordActivity, recordAudit, notify } from "@/lib/services/records";
@@ -45,7 +45,8 @@ import { assertMaxThreeSuperiors, cannotDeleteSelf, deriveEquipmentStatus } from
 import { inferSkillsFromRecentWork } from "@/lib/services/skills";
 import { canTransitionTask, overdueDays, type TaskStatus } from "@/lib/permissions";
 import { newId, now } from "@/lib/utils";
-import { sendEmail } from "@/lib/integrations/email";
+import { createSignupAuth } from "@/lib/auth/signup";
+import { temporaryPassword } from "@/lib/auth/temporary-password";
 import {
   borrowSchema,
   completionSchema,
@@ -908,51 +909,83 @@ export async function upsertKpiTarget(form: FormData) {
 
 export async function inviteUser(form: FormData) {
   const ctx = requirePermission(await getAuthContext(), "user:invite");
-  const parsed = inviteSchema.parse({
+  const parsed = inviteSchema.safeParse({
     email: form.get("email"),
     fullName: form.get("fullName"),
+    username: form.get("username"),
     roleKey: form.get("roleKey"),
   });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the account details.");
+  const email = parsed.data.email.toLowerCase();
+  const username = parsed.data.username.toLowerCase();
+  const role = await db.query.roles.findFirst({ where: eq(roles.key, parsed.data.roleKey) });
+  if (!role) throw new Error("Choose a role.");
+  const [emailTaken] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.email, email));
+  const [usernameTaken] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.username, username));
+  const [personEmailTaken] = await db.select({ id: people.id }).from(people).where(eq(people.email, email));
+  const [personUsernameTaken] = await db.select({ id: people.id }).from(people).where(eq(people.username, username));
+  if (emailTaken || personEmailTaken) throw new Error("That email is already in use.");
+  if (usernameTaken || personUsernameTaken) throw new Error("That username is already in use.");
+
+  const password = temporaryPassword();
+  const signed = await createSignupAuth().api.signUpEmail({
+    body: {
+      email,
+      password,
+      name: parsed.data.fullName,
+      username,
+    },
+  });
   const personId = newId();
-  await db.insert(people).values({
-    id: personId,
-    fullName: parsed.fullName,
-    email: parsed.email,
-    employmentType: "staff",
-    organizationalStatus: "invited",
-    isDemo: false,
-    createdAt: now(),
-    updatedAt: now(),
-  });
-  const role = await db.query.roles.findFirst({ where: eq(roles.key, parsed.roleKey) });
-  if (role) {
+  const employmentType =
+    parsed.data.roleKey === "intern"
+      ? "intern"
+      : parsed.data.roleKey === "executive"
+        ? "executive"
+        : parsed.data.roleKey === "staff"
+          ? "staff"
+          : "management";
+  try {
+    await db.insert(people).values({
+      id: personId,
+      userId: signed.user.id,
+      fullName: parsed.data.fullName,
+      email,
+      username,
+      employmentType,
+      organizationalStatus: "active",
+      mustChangePassword: true,
+      isDemo: false,
+      createdAt: now(),
+      updatedAt: now(),
+    });
     await db.insert(personRoles).values({ id: newId(), personId, roleId: role.id, createdAt: now() });
+  } catch (error) {
+    await db.delete(authUser).where(eq(authUser.id, signed.user.id));
+    throw error;
   }
-  const token = newId();
-  await db.insert(invitations).values({
-    id: newId(),
-    email: parsed.email,
-    personId,
-    invitedById: ctx.person.id,
-    token,
-    status: "pending",
-    expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-    createdAt: now(),
-  });
-  const url = `${process.env.BETTER_AUTH_URL ?? "http://localhost:3000"}/activate?token=${token}`;
-  await sendEmail({
-    to: parsed.email,
-    subject: "Activate your KAGUM ONE account",
-    text: `You were invited to KAGUM ONE. Activate: ${url}`,
-  });
   await recordAudit({
     actorId: ctx.person.id,
-    action: "user.invited",
+    action: "user.created",
     entityType: "person",
     entityId: personId,
-    newValue: parsed.email,
+    newValue: { email, username, roleKey: role.key },
   });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "user.created",
+    entityType: "person",
+    entityId: personId,
+    summary: `${ctx.person.fullName} created an account for ${parsed.data.fullName}.`,
+  });
+  revalidatePath("/team");
   revalidatePath("/admin");
+  return {
+    fullName: parsed.data.fullName,
+    email,
+    username,
+    temporaryPassword: password,
+  };
 }
 
 export async function setReporting(form: FormData) {

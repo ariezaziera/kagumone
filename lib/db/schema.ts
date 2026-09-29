@@ -11,6 +11,7 @@ export const user = sqliteTable("user", {
   email: text("email").notNull().unique(),
   emailVerified: integer("email_verified", { mode: "boolean" }).notNull().default(false),
   image: text("image"),
+  username: text("username").unique(),
   createdAt: ts("created_at"),
   updatedAt: ts("updated_at"),
 });
@@ -75,15 +76,21 @@ export const people = sqliteTable(
     fullName: text("full_name").notNull(),
     preferredName: text("preferred_name"),
     email: text("email").notNull(),
+    username: text("username"),
     positionTitle: text("position_title"),
     employmentType: text("employment_type").notNull().default("staff"),
     organizationalStatus: text("organizational_status").notNull().default("active"),
     lastWorkingDay: tsNull("last_working_day"),
     isDemo: integer("is_demo", { mode: "boolean" }).notNull().default(false),
+    mustChangePassword: integer("must_change_password", { mode: "boolean" }).notNull().default(false),
     createdAt: ts("created_at"),
     updatedAt: ts("updated_at"),
   },
-  (t) => [index("people_user_idx").on(t.userId), index("people_status_idx").on(t.organizationalStatus)],
+  (t) => [
+    index("people_user_idx").on(t.userId),
+    index("people_status_idx").on(t.organizationalStatus),
+    uniqueIndex("people_username_unique").on(t.username),
+  ],
 );
 
 export const departments = sqliteTable("departments", {

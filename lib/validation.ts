@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 export const loginSchema = z.object({
-  email: z.string().email(),
+  identifier: z.string().trim().min(1, "Enter your email or username."),
   password: z.string().min(8),
   remember: z.boolean().optional(),
 });
@@ -97,9 +97,15 @@ export const borrowSchema = z.object({
 });
 
 export const inviteSchema = z.object({
-  email: z.string().email(),
-  fullName: z.string().min(2),
-  roleKey: z.string(),
+  email: z.string().trim().email(),
+  fullName: z.string().trim().min(2),
+  username: z
+    .string()
+    .trim()
+    .min(3, "Username must be at least 3 characters.")
+    .max(30, "Username must be 30 characters or fewer.")
+    .regex(/^[A-Za-z0-9_]+$/, "Username can use letters, numbers, and underscores."),
+  roleKey: z.string().min(1),
 });
 
 const handoverRefSchema = z.object({

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/app-shell";
 export default async function WorkspaceLayout({ children }: { children: React.ReactNode }) {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
+  if (ctx.person.mustChangePassword) redirect("/first-password");
   return (
     <AppShell
       personName={ctx.person.fullName}

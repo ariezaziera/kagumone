@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useState, Suspense } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { authClient } from "@/lib/auth/client";
+import { signInWithIdentifier } from "@/lib/actions/auth-extra";
 import { loginSchema } from "@/lib/validation";
 import { Button, Field, Input } from "@/components/ui";
 import { PersonaSwitcher } from "@/components/persona-switcher";
@@ -16,7 +16,7 @@ function LoginForm() {
   const [error, setError] = useState<string | null>(null);
   const form = useForm({
     resolver: zodResolver(loginSchema),
-    defaultValues: { email: "", password: "", remember: false },
+    defaultValues: { identifier: "", password: "", remember: false },
   });
 
   return (
@@ -24,20 +24,21 @@ function LoginForm() {
       className="space-y-3"
       onSubmit={form.handleSubmit(async (values) => {
         setError(null);
-        const result = await authClient.signIn.email({
-          email: values.email,
+        const result = await signInWithIdentifier({
+          identifier: values.identifier,
           password: values.password,
-          rememberMe: values.remember,
+          remember: Boolean(values.remember),
         });
         if (result.error) {
-          setError(result.error.message ?? "Unable to sign in.");
+          setError(result.error);
           return;
         }
-        router.push(params.get("next") || "/dashboard");
+        router.push(result.mustChangePassword ? "/first-password" : params.get("next") || "/dashboard");
+        router.refresh();
       })}
     >
-      <Field label="Email">
-        <Input type="email" autoComplete="email" {...form.register("email")} />
+      <Field label="Email or username">
+        <Input type="text" autoComplete="username" {...form.register("identifier")} />
       </Field>
       <Field label="Password">
         <Input type="password" autoComplete="current-password" {...form.register("password")} />

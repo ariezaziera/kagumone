@@ -29,6 +29,11 @@ const needed: Record<string, { name: string; sql: string }[]> = {
     { name: "work_type", sql: "ALTER TABLE planned_work ADD COLUMN work_type text DEFAULT 'planned_task_work' NOT NULL" },
   ],
   person_skills: [{ name: "source", sql: "ALTER TABLE person_skills ADD COLUMN source text DEFAULT 'inferred' NOT NULL" }],
+  people: [
+    { name: "username", sql: "ALTER TABLE people ADD COLUMN username text" },
+    { name: "must_change_password", sql: "ALTER TABLE people ADD COLUMN must_change_password integer DEFAULT 0 NOT NULL" },
+  ],
+  user: [{ name: "username", sql: "ALTER TABLE user ADD COLUMN username text" }],
   skill_evidence: [
     { name: "related_type", sql: "ALTER TABLE skill_evidence ADD COLUMN related_type text" },
     { name: "related_id", sql: "ALTER TABLE skill_evidence ADD COLUMN related_id text" },
@@ -123,6 +128,9 @@ async function main() {
       FOREIGN KEY (person_id) REFERENCES people(id)
     )
   `);
+
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS user_username_unique ON user(username)");
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS people_username_unique ON people(username)");
 
   await client.execute(`
     CREATE TABLE IF NOT EXISTS announcements (
