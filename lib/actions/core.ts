@@ -35,7 +35,6 @@ import {
   completionPeople,
   taskExtensions,
   tasks,
-  timeEntries,
   employmentHistory,
   user as authUser,
 } from "@/lib/db/schema";
@@ -1146,23 +1145,6 @@ export async function deactivatePerson(form: FormData) {
     entityId: personId,
   });
   revalidatePath("/team");
-}
-
-export async function logTime(form: FormData) {
-  const ctx = await getAuthContext();
-  if (!ctx) throw new Error("You must be signed in.");
-  await db.insert(timeEntries).values({
-    id: newId(),
-    personId: ctx.person.id,
-    taskId: String(form.get("taskId") || "") || null,
-    projectId: String(form.get("projectId") || "") || null,
-    workDate: String(form.get("workDate")),
-    plannedMinutes: Number(form.get("plannedMinutes") || 0),
-    actualMinutes: Number(form.get("actualMinutes") || 0),
-    notes: String(form.get("notes") || ""),
-    createdAt: now(),
-  });
-  revalidatePath("/time-tracking");
 }
 
 function parseHandoverRefs(value: FormDataEntryValue | null) {

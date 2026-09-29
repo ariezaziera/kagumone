@@ -58,7 +58,6 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/kpi", label: "KPI", permission: "kpi:view" },
       { href: "/reports", label: "Reports", permission: "reports:view" },
-      { href: "/time-tracking", label: "Time Tracking" },
       { href: "/workload", label: "Workload" },
     ],
   },

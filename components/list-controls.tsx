@@ -108,7 +108,7 @@ function Toolbar({
         </div>
         {children}
       </div>
-      <p className="text-xs text-secondary">{shown === total ? `${total} records` : `${shown} of ${total} records`}</p>
+      <p className="text-xs text-secondary">{shown === total ? `${total} ${total === 1 ? "record" : "records"}` : `${shown} of ${total} records`}</p>
     </div>
   );
 }

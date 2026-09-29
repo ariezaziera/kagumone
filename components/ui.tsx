@@ -160,7 +160,7 @@ export function Button({
   return <button className={buttonClass(variant, className)} {...props} />;
 }
 
-const controlClass = "w-full rounded-[12px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-primary";
+const controlClass = "w-full min-w-0 max-w-full rounded-[12px] border border-border bg-surface px-3 py-2 text-sm text-text outline-none transition-colors focus:border-primary";
 
 export function Input({ className, ...props }: InputHTMLAttributes<HTMLInputElement>) {
   return <input className={cn(controlClass, className)} {...props} />;
