@@ -96,6 +96,12 @@ export const borrowSchema = z.object({
   beforePhotoCount: z.number().int(),
 });
 
+export const profileSchema = z.object({
+  personId: z.string().min(1),
+  fullName: z.string().trim().min(2, "Name must be at least 2 characters.").max(120),
+  preferredName: z.string().trim().max(80).optional(),
+});
+
 export const inviteSchema = z.object({
   email: z.string().trim().email(),
   fullName: z.string().trim().min(2),

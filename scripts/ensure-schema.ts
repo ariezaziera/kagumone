@@ -32,6 +32,8 @@ const needed: Record<string, { name: string; sql: string }[]> = {
   people: [
     { name: "username", sql: "ALTER TABLE people ADD COLUMN username text" },
     { name: "must_change_password", sql: "ALTER TABLE people ADD COLUMN must_change_password integer DEFAULT 0 NOT NULL" },
+    { name: "photo_storage_key", sql: "ALTER TABLE people ADD COLUMN photo_storage_key text" },
+    { name: "photo_mime_type", sql: "ALTER TABLE people ADD COLUMN photo_mime_type text" },
   ],
   user: [{ name: "username", sql: "ALTER TABLE user ADD COLUMN username text" }],
   skill_evidence: [

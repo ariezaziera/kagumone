@@ -39,7 +39,7 @@ import {
   employmentHistory,
   user as authUser,
 } from "@/lib/db/schema";
-import { getAuthContext, requirePermission, hasPermission } from "@/lib/auth/context";
+import { canEditProfile, getAuthContext, requirePermission, hasPermission } from "@/lib/auth/context";
 import { recordActivity, recordAudit, notify } from "@/lib/services/records";
 import { assertMaxThreeSuperiors, cannotDeleteSelf, deriveEquipmentStatus } from "@/lib/services/org";
 import { inferSkillsFromRecentWork } from "@/lib/services/skills";
@@ -47,6 +47,8 @@ import { canTransitionTask, overdueDays, type TaskStatus } from "@/lib/permissio
 import { newId, now } from "@/lib/utils";
 import { createSignupAuth } from "@/lib/auth/signup";
 import { temporaryPassword } from "@/lib/auth/temporary-password";
+import { storeFile } from "@/lib/integrations/storage";
+import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import {
   borrowSchema,
   completionSchema,
@@ -54,6 +56,7 @@ import {
   extensionSchema,
   inviteSchema,
   handoverSchema,
+  profileSchema,
   plannedWorkSchema,
   projectSchema,
   taskSchema,
@@ -905,6 +908,89 @@ export async function upsertKpiTarget(form: FormData) {
     });
   }
   revalidatePath("/kpi");
+}
+
+const PROFILE_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
+
+export async function updateProfile(form: FormData) {
+  const ctx = await getAuthContext();
+  if (!ctx) throw new Error("You must be signed in.");
+  if (ctx.person.mustChangePassword) throw new Error("Set a new password before continuing.");
+  const parsed = profileSchema.safeParse({
+    personId: form.get("personId"),
+    fullName: form.get("fullName"),
+    preferredName: String(form.get("preferredName") ?? ""),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the profile details.");
+  if (!canEditProfile(ctx, parsed.data.personId)) throw new Error("You are not authorized to edit this profile.");
+  const [person] = await db.select().from(people).where(eq(people.id, parsed.data.personId));
+  if (!person || (person.isDemo && person.id !== ctx.person.id && (await hideDemoWorkspace()))) {
+    throw new Error("Person not found.");
+  }
+
+  const photo = form.get("photo");
+  const removePhoto = form.get("removePhoto") === "on";
+  let photoStorageKey = person.photoStorageKey;
+  let photoMimeType = person.photoMimeType;
+  let photoChanged = false;
+  if (photo instanceof File && photo.size > 0) {
+    if (!PROFILE_PHOTO_TYPES.has(photo.type)) throw new Error("Use a JPEG, PNG, WebP, or GIF photo.");
+    if (photo.size > 2 * 1024 * 1024) throw new Error("Profile photo must be 2 MB or smaller.");
+    const stored = await storeFile(photo);
+    photoStorageKey = stored.storageKey;
+    photoMimeType = photo.type;
+    photoChanged = true;
+  } else if (removePhoto && person.photoStorageKey) {
+    photoStorageKey = null;
+    photoMimeType = null;
+    photoChanged = true;
+  }
+
+  const preferredName = parsed.data.preferredName?.trim() ? parsed.data.preferredName.trim() : null;
+  const nameChanged = person.fullName !== parsed.data.fullName || (person.preferredName ?? null) !== preferredName;
+  if (!nameChanged && !photoChanged) return;
+
+  await db
+    .update(people)
+    .set({
+      fullName: parsed.data.fullName,
+      preferredName,
+      photoStorageKey,
+      photoMimeType,
+      updatedAt: now(),
+    })
+    .where(eq(people.id, person.id));
+  if (person.userId && person.fullName !== parsed.data.fullName) {
+    await db.update(authUser).set({ name: parsed.data.fullName, updatedAt: now() }).where(eq(authUser.id, person.userId));
+  }
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "profile.updated",
+    entityType: "person",
+    entityId: person.id,
+    previousValue: { fullName: person.fullName, preferredName: person.preferredName, hasPhoto: Boolean(person.photoStorageKey) },
+    newValue: { fullName: parsed.data.fullName, preferredName, hasPhoto: Boolean(photoStorageKey) },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "profile.updated",
+    entityType: "person",
+    entityId: person.id,
+    summary:
+      ctx.person.id === person.id
+        ? `${ctx.person.fullName} updated their profile.`
+        : `${ctx.person.fullName} updated the profile for ${parsed.data.fullName}.`,
+  });
+  if (ctx.person.id !== person.id) {
+    await notify({
+      personId: person.id,
+      title: "Profile updated",
+      body: `${ctx.person.fullName} updated your profile.`,
+      href: "/profile",
+      kind: "profile_updated",
+    });
+  }
+  revalidateMany(["/profile", "/team", `/team/${person.id}`, "/dashboard"]);
 }
 
 export async function inviteUser(form: FormData) {

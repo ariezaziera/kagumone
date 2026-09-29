@@ -4,7 +4,6 @@ import { nextCookies } from "better-auth/next-js";
 import { username } from "better-auth/plugins";
 import { db } from "@/lib/db";
 import * as schema from "@/lib/db/schema";
-import { sendEmail } from "@/lib/integrations/email";
 import { authBaseURL, authTrustedOrigins } from "@/lib/auth/origins";
 
 export const auth = betterAuth({
@@ -23,12 +22,8 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    sendResetPassword: async ({ user, url }) => {
-      await sendEmail({
-        to: user.email,
-        subject: "Reset your KAGUM ONE password",
-        text: `Reset your password: ${url}`,
-      });
+    sendResetPassword: async () => {
+      throw new Error("Password resets are issued by an administrator.");
     },
   },
   plugins: [username({ displayUsername: false }), nextCookies()],

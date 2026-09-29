@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signInWithIdentifier } from "@/lib/actions/auth-extra";
 import { loginSchema } from "@/lib/validation";
+import { PasswordInput } from "@/components/password-input";
 import { Button, Field, Input } from "@/components/ui";
 import { PersonaSwitcher } from "@/components/persona-switcher";
 
@@ -41,7 +42,7 @@ function LoginForm() {
         <Input type="text" autoComplete="username" {...form.register("identifier")} />
       </Field>
       <Field label="Password">
-        <Input type="password" autoComplete="current-password" {...form.register("password")} />
+        <PasswordInput autoComplete="current-password" {...form.register("password")} />
       </Field>
       <label className="flex items-center gap-2 text-sm text-secondary">
         <input type="checkbox" {...form.register("remember")} /> Remember me

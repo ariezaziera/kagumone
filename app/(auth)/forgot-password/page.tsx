@@ -1,35 +1,17 @@
-"use client";
-
 import Link from "next/link";
-import { useState } from "react";
-import { Button, Field, Input } from "@/components/ui";
 
 export default function ForgotPasswordPage() {
-  const [status, setStatus] = useState<string | null>(null);
   return (
-    <form
-      className="space-y-3"
-      onSubmit={async (e) => {
-        e.preventDefault();
-        const email = new FormData(e.currentTarget).get("email") as string;
-        await fetch("/api/auth/forget-password", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, redirectTo: "/reset-password" }),
-        });
-        setStatus("If that account exists, a reset link was sent (or logged in the server console in development).");
-      }}
-    >
-      <Field label="Email">
-        <Input name="email" type="email" required />
-      </Field>
-      <Button className="w-full" type="submit">
-        Send reset link
-      </Button>
-      {status ? <p className="text-sm text-secondary">{status}</p> : null}
-      <Link className="text-sm text-info" href="/login">
-        Back to login
-      </Link>
-    </form>
+    <div className="space-y-3 text-sm">
+      <h2 className="text-lg font-semibold text-text">Forgot your password?</h2>
+      <p className="leading-relaxed text-secondary">
+        Contact an administrator. They can reset your password and give you a temporary one. Sign in with that password, then choose a new one before you can continue.
+      </p>
+      <p>
+        <Link className="text-info" href="/login">
+          Back to login
+        </Link>
+      </p>
+    </div>
   );
 }

@@ -36,6 +36,7 @@ import {
 import { NAV_GROUPS, MOBILE_NAV, navItemIsActive, type NavGroup } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
+import { PersonAvatar } from "@/components/person-avatar";
 import { BrandWordmark, Button, buttonClass, iconButtonClass } from "@/components/ui";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
@@ -157,18 +158,26 @@ function SidebarGroup({
 export function AppShell({
   children,
   personName,
+  personId,
+  hasPhoto,
+  photoVersion,
   permissions,
   isDev,
 }: {
   children: React.ReactNode;
   personName: string;
+  personId: string;
+  hasPhoto: boolean;
+  photoVersion: number;
   permissions: string[];
   isDev: boolean;
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const can = (perm?: string) => !perm || permissions.includes(perm);
-  const initial = personName.trim().charAt(0).toUpperCase() || "K";
+  const avatar = (key: string) => (
+    <PersonAvatar key={key} personId={personId} name={personName} hasPhoto={hasPhoto} version={photoVersion} size="sm" />
+  );
 
   useEffect(() => {
     setOpen(false);
@@ -220,7 +229,7 @@ export function AppShell({
           </nav>
           <div className="border-t border-border p-3 lg:hidden">
             <p className="flex min-w-0 items-center gap-2 text-sm font-medium text-text">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-charcoal text-xs font-bold text-white">{initial}</span>
+              {avatar("menu")}
               <span className="truncate">{personName}</span>
             </p>
             <Button variant="secondary" className="mt-3 w-full" onClick={signOut}>
@@ -238,7 +247,7 @@ export function AppShell({
               <BrandWordmark className="whitespace-nowrap text-[13px] leading-none sm:text-sm" />
             </Link>
             <p className="hidden min-w-0 flex-1 items-center gap-2 text-sm font-medium text-text lg:flex">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-charcoal text-xs font-bold text-white">{initial}</span>
+              {avatar("header")}
               <span className="truncate">{personName}</span>
             </p>
             <div className="ml-auto flex items-center gap-1">

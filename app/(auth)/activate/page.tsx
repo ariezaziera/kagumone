@@ -3,7 +3,8 @@
 import { useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { activateAccount } from "@/lib/actions/auth-extra";
-import { Button, Field, Input } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
+import { Button, Field } from "@/components/ui";
 
 function ActivateForm() {
   const params = useSearchParams();
@@ -24,10 +25,10 @@ function ActivateForm() {
     >
       <p className="text-sm text-secondary">Set a password to activate your invited account.</p>
       <Field label="Password">
-        <Input name="password" type="password" required minLength={8} />
+        <PasswordInput name="password" required minLength={8} />
       </Field>
       <Field label="Confirm password">
-        <Input name="confirm" type="password" required minLength={8} />
+        <PasswordInput name="confirm" required minLength={8} />
       </Field>
       <Button className="w-full" type="submit">
         Activate account

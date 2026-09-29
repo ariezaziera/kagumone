@@ -81,3 +81,7 @@ export function requirePermission(ctx: AuthContext | null, permission: Permissio
 export function isSelfOrSuperior(ctx: AuthContext, personId: string) {
   return ctx.person.id === personId || ctx.subordinateIds.includes(personId);
 }
+
+export function canEditProfile(ctx: AuthContext, personId: string) {
+  return ctx.person.id === personId || hasPermission(ctx, "administration:manage") || ctx.subordinateIds.includes(personId);
+}

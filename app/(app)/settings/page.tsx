@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { authClient } from "@/lib/auth/client";
-import { Button, Card, Field, Input, PageHeader } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
+import { Button, Card, Field, PageHeader } from "@/components/ui";
 
 export default function SettingsPage() {
   const [status, setStatus] = useState<string | null>(null);
@@ -11,6 +12,7 @@ export default function SettingsPage() {
       <PageHeader module="admin" title="Settings" description="Account and security preferences. Operational records live in their own modules." />
       <Card>
         <h2 className="mb-3 font-medium">Change password</h2>
+        <p className="mb-3 text-sm text-secondary">If you no longer know this password, contact an administrator. They can issue a temporary password, and your next login will ask you to replace it.</p>
         <form
           className="space-y-3"
           onSubmit={async (e) => {
@@ -23,10 +25,10 @@ export default function SettingsPage() {
           }}
         >
           <Field label="Current password">
-            <Input name="currentPassword" type="password" required />
+            <PasswordInput name="currentPassword" autoComplete="current-password" required />
           </Field>
           <Field label="New password">
-            <Input name="newPassword" type="password" required minLength={8} />
+            <PasswordInput name="newPassword" autoComplete="new-password" required minLength={8} />
           </Field>
           <Button type="submit">Update password</Button>
         </form>

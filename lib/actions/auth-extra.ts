@@ -1,14 +1,18 @@
 "use server";
 
 import { headers } from "next/headers";
-import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+import { and, eq } from "drizzle-orm";
+import { hashPassword } from "better-auth/crypto";
 import { db } from "@/lib/db";
-import { invitations, people } from "@/lib/db/schema";
+import { account, invitations, people, session } from "@/lib/db/schema";
 import { now } from "@/lib/utils";
-import { recordAudit } from "@/lib/services/records";
+import { notify, recordActivity, recordAudit } from "@/lib/services/records";
 import { assistantAnswer } from "@/lib/ai";
 import { auth } from "@/lib/auth";
-import { getAuthContext } from "@/lib/auth/context";
+import { getAuthContext, requirePermission } from "@/lib/auth/context";
+import { temporaryPassword } from "@/lib/auth/temporary-password";
+import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import { listActivity, listContents, listKnowledge, listPeople, listProjects, listTasks } from "@/lib/queries";
 import { createSignupAuth } from "@/lib/auth/signup";
 
@@ -59,6 +63,55 @@ export async function completeFirstPassword(form: FormData) {
     entityType: "person",
     entityId: ctx.person.id,
   });
+}
+
+export async function resetAccountPassword(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "user:invite");
+  const personId = String(form.get("personId") || "");
+  if (personId === ctx.person.id) throw new Error("Use Settings to change your own password.");
+  const [person] = await db.select().from(people).where(eq(people.id, personId));
+  if (!person || (person.isDemo && (await hideDemoWorkspace()))) throw new Error("Person not found.");
+  if (!person.userId) throw new Error("This person has no login to reset.");
+  const [credential] = await db
+    .select()
+    .from(account)
+    .where(and(eq(account.userId, person.userId), eq(account.providerId, "credential")));
+  if (!credential) throw new Error("This account has no password to reset.");
+  const password = temporaryPassword();
+  await db
+    .update(account)
+    .set({ password: await hashPassword(password), updatedAt: now() })
+    .where(eq(account.id, credential.id));
+  await db.update(people).set({ mustChangePassword: true, updatedAt: now() }).where(eq(people.id, person.id));
+  await db.delete(session).where(eq(session.userId, person.userId));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "password.reset",
+    entityType: "person",
+    entityId: person.id,
+    newValue: { mustChangePassword: true },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "password.reset",
+    entityType: "person",
+    entityId: person.id,
+    summary: `${ctx.person.fullName} reset the password for ${person.fullName}.`,
+  });
+  await notify({
+    personId: person.id,
+    title: "Password reset",
+    body: "An administrator reset your password. Sign in with the temporary password they give you, then choose a new one.",
+    href: "/login",
+    kind: "password_reset",
+  });
+  revalidatePath(`/team/${person.id}`);
+  return {
+    fullName: person.fullName,
+    email: person.email,
+    username: person.username,
+    temporaryPassword: password,
+  };
 }
 
 export async function activateAccount(form: FormData) {

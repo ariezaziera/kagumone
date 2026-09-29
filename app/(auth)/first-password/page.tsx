@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { completeFirstPassword } from "@/lib/actions/auth-extra";
 import { authClient } from "@/lib/auth/client";
-import { Button, Field, Input } from "@/components/ui";
+import { PasswordInput } from "@/components/password-input";
+import { Button, Field } from "@/components/ui";
 
 export default function FirstPasswordPage() {
   const router = useRouter();
@@ -27,13 +28,13 @@ export default function FirstPasswordPage() {
         This account is using a temporary password. Set a new one before continuing.
       </p>
       <Field label="Temporary password">
-        <Input name="currentPassword" type="password" autoComplete="current-password" required />
+        <PasswordInput name="currentPassword" autoComplete="current-password" required />
       </Field>
       <Field label="New password">
-        <Input name="password" type="password" autoComplete="new-password" required minLength={8} />
+        <PasswordInput name="password" autoComplete="new-password" required minLength={8} />
       </Field>
       <Field label="Confirm new password">
-        <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} />
+        <PasswordInput name="confirm" autoComplete="new-password" required minLength={8} />
       </Field>
       {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button className="w-full" type="submit">

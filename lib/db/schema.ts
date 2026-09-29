@@ -77,6 +77,8 @@ export const people = sqliteTable(
     preferredName: text("preferred_name"),
     email: text("email").notNull(),
     username: text("username"),
+    photoStorageKey: text("photo_storage_key"),
+    photoMimeType: text("photo_mime_type"),
     positionTitle: text("position_title"),
     employmentType: text("employment_type").notNull().default("staff"),
     organizationalStatus: text("organizational_status").notNull().default("active"),

@@ -9,6 +9,9 @@ export default async function WorkspaceLayout({ children }: { children: React.Re
   return (
     <AppShell
       personName={ctx.person.fullName}
+      personId={ctx.person.id}
+      hasPhoto={Boolean(ctx.person.photoStorageKey)}
+      photoVersion={ctx.person.updatedAt.getTime()}
       permissions={ctx.permissionKeys}
       isDev={process.env.NODE_ENV !== "production"}
     >
