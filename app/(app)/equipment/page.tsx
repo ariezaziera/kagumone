@@ -1,11 +1,11 @@
 import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { equipment, equipmentLoans, equipmentMaintenance } from "@/lib/db/schema";
+import { equipmentMaintenance } from "@/lib/db/schema";
 import { borrowEquipment, registerEquipment } from "@/lib/actions/core";
 import { deriveEquipmentStatus } from "@/lib/services/org";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, statusTone } from "@/components/ui";
-import { listProjects, listTasks } from "@/lib/queries";
+import { listEquipment, listProjects, listTasks, openLoans } from "@/lib/queries";
 import Link from "next/link";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
@@ -15,12 +15,14 @@ export default async function EquipmentPage() {
   if (!ctx) redirect("/login");
   const canRegister = hasPermission(ctx, "equipment:register");
   const [items, loans, maintenance, projects, tasks] = await Promise.all([
-    db.select().from(equipment),
-    db.select().from(equipmentLoans).where(eq(equipmentLoans.status, "borrowed")),
+    listEquipment(),
+    openLoans(),
     db.select().from(equipmentMaintenance).where(eq(equipmentMaintenance.status, "open")),
     listProjects(),
     listTasks(),
   ]);
+  const visibleEquipment = new Set(items.map((item) => item.id));
+  const openMaintenance = maintenance.filter((row) => visibleEquipment.has(row.equipmentId));
   const statuses = items.map((item) => {
     const loan = loans.find((l) => l.equipmentId === item.id);
     return {
@@ -28,7 +30,7 @@ export default async function EquipmentPage() {
       status: deriveEquipmentStatus({
         openLoan: Boolean(loan),
         expectedReturnAt: loan?.expectedReturnAt,
-        maintenanceOpen: maintenance.some((m) => m.equipmentId === item.id),
+        maintenanceOpen: openMaintenance.some((m) => m.equipmentId === item.id),
         condition: item.condition,
       }),
     };

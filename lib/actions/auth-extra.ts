@@ -9,9 +9,8 @@ import { recordAudit } from "@/lib/services/records";
 import { assistantAnswer } from "@/lib/ai";
 import { auth } from "@/lib/auth";
 import { getAuthContext } from "@/lib/auth/context";
+import { listActivity, listContents, listKnowledge, listPeople, listProjects, listTasks } from "@/lib/queries";
 import { createSignupAuth } from "@/lib/auth/signup";
-import { activityLogs, contents, knowledgeArticles, projects, tasks } from "@/lib/db/schema";
-import { desc, like, or } from "drizzle-orm";
 
 export async function signInWithIdentifier(input: { identifier: string; password: string; remember: boolean }) {
   const identifier = input.identifier.trim();
@@ -103,13 +102,18 @@ export async function activateAccount(form: FormData) {
 export async function askAssistant(question: string) {
   const ctx = await getAuthContext();
   if (!ctx) throw new Error("You must be signed in.");
-  const q = `%${question.replaceAll("%", "")}%`;
-  const [projectRows, taskRows, activity, knowledge] = await Promise.all([
-    db.select().from(projects).where(or(like(projects.name, q), like(projects.description, q))).limit(8),
-    db.select().from(tasks).where(like(tasks.title, q)).limit(8),
-    db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(8),
-    db.select().from(knowledgeArticles).where(like(knowledgeArticles.title, q)).limit(8),
+  const needle = question.replaceAll("%", "").trim().toLowerCase();
+  const [projectsVisible, tasksVisible, activity, knowledgeVisible] = await Promise.all([
+    listProjects(),
+    listTasks(),
+    listActivity(8),
+    listKnowledge(),
   ]);
+  const projectRows = projectsVisible
+    .filter((row) => row.name.toLowerCase().includes(needle) || (row.description ?? "").toLowerCase().includes(needle))
+    .slice(0, 8);
+  const taskRows = tasksVisible.filter((row) => row.title.toLowerCase().includes(needle)).slice(0, 8);
+  const knowledge = knowledgeVisible.filter((row) => row.title.toLowerCase().includes(needle)).slice(0, 8);
   const sources = [
     ...projectRows.map((p) => ({ type: "project", id: p.id, label: p.name })),
     ...taskRows.map((t) => ({ type: "task", id: t.id, label: t.title })),
@@ -140,12 +144,11 @@ export async function askAssistant(question: string) {
 export async function searchRecords(term: string) {
   const ctx = await getAuthContext();
   if (!ctx) throw new Error("You must be signed in.");
-  const q = `%${term.replaceAll("%", "")}%`;
   const [projectRows, taskRows, peopleRows, contentRows] = await Promise.all([
-    db.select().from(projects).where(like(projects.name, q)).limit(5),
-    db.select().from(tasks).where(like(tasks.title, q)).limit(5),
-    db.select().from(people).where(like(people.fullName, q)).limit(5),
-    db.select().from(contents).where(like(contents.title, q)).limit(5),
+    listProjects().then((rows) => rows.filter((row) => row.name.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
+    listTasks().then((rows) => rows.filter((row) => row.title.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
+    listPeople().then((rows) => rows.filter((row) => row.fullName.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
+    listContents().then((rows) => rows.filter((row) => row.title.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
   ]);
   return { projectRows, taskRows, peopleRows, contentRows };
 }

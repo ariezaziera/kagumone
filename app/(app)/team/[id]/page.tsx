@@ -6,12 +6,13 @@ import { deactivatePerson, setLastWorkingDay } from "@/lib/actions/core";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, Input, PageHeader, Textarea } from "@/components/ui";
 import { formatDate } from "@/lib/utils";
+import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import Link from "next/link";
 
 export default async function TeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const [person] = await db.select().from(people).where(eq(people.id, id));
-  if (!person) notFound();
+  if (!person || (person.isDemo && (await hideDemoWorkspace()))) notFound();
   const [assigned, reporting, personSkillRows, skillRows] = await Promise.all([
     db.select().from(tasks).where(eq(tasks.assigneeId, id)),
     db.select().from(reportingRelationships).where(eq(reportingRelationships.personId, id)),

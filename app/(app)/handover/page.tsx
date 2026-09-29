@@ -1,9 +1,8 @@
 import Link from "next/link";
 import { Archive, FileText, Folder, Link2, ListChecks, NotebookPen } from "lucide-react";
-import { eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { files, handoverItems } from "@/lib/db/schema";
-import { listHandovers, listPeople, listProjects } from "@/lib/queries";
+import { handoverItems } from "@/lib/db/schema";
+import { listFiles, listHandovers, listPeople, listProjects } from "@/lib/queries";
 import { Badge, Card, EmptyState, PageHeader, statusTone } from "@/components/ui";
 import { HandoverForm } from "./handover-form";
 
@@ -21,8 +20,16 @@ function sectionTitle(kind: string) {
 }
 
 export default async function HandoverPage() {
-  const [rows, peopleRows, projects] = await Promise.all([listHandovers(), listPeople(), listProjects()]);
-  const [items, fileRows] = await Promise.all([db.select().from(handoverItems), db.select().from(files).where(eq(files.relatedType, "handover"))]);
+  const [rows, peopleRows, projects, allItems, allFiles] = await Promise.all([
+    listHandovers(),
+    listPeople(),
+    listProjects(),
+    db.select().from(handoverItems),
+    listFiles(),
+  ]);
+  const handoverIds = new Set(rows.map((row) => row.id));
+  const items = allItems.filter((item) => handoverIds.has(item.handoverId));
+  const fileRows = allFiles.filter((file) => file.relatedType === "handover" && file.relatedId && handoverIds.has(file.relatedId));
   const name = (id?: string | null) => peopleRows.find((person) => person.id === id)?.fullName ?? "Unassigned";
   const projectName = (id?: string | null) => projects.find((project) => project.id === id)?.name;
 

@@ -1,9 +1,9 @@
 import { saveSetting } from "@/lib/actions/core";
 import { db } from "@/lib/db";
-import { auditLogs, invitations, permissions, roles, settings } from "@/lib/db/schema";
+import { invitations, permissions, roles, settings } from "@/lib/db/schema";
+import { listAudit } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, Input, PageHeader, Textarea } from "@/components/ui";
-import { desc } from "drizzle-orm";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
 
@@ -16,7 +16,7 @@ export default async function AdminPage() {
     db.select().from(permissions),
     db.select().from(settings),
     db.select().from(invitations),
-    db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(20),
+    listAudit(20),
   ]);
   return (
     <div>

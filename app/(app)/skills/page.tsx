@@ -20,6 +20,7 @@ import { inferSkillsForEveryone, inferredLevelLabel, INFERRED_LEVELS } from "@/l
 import { getAuthContext } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 
 const SKILL_ICONS: Record<string, LucideIcon> = {
   "Website Update": Globe,
@@ -64,13 +65,17 @@ export default async function SkillsPage() {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
   await inferSkillsForEveryone();
-  const [cats, skillRows, assigned, evidence, peopleRows] = await Promise.all([
+  const [cats, skillRows, assignedRows, evidence, peopleRows] = await Promise.all([
     db.select().from(skillCategories),
     db.select().from(skills),
     db.select().from(personSkills),
     db.select().from(skillEvidence),
     db.select().from(people),
   ]);
+  const hidingDemo = await hideDemoWorkspace();
+  const visiblePeople = hidingDemo ? peopleRows.filter((person) => !person.isDemo) : peopleRows;
+  const visibleIds = new Set(visiblePeople.map((person) => person.id));
+  const assigned = assignedRows.filter((row) => visibleIds.has(row.personId));
   const groups = cats
     .map((category) => ({
       category,
@@ -108,7 +113,7 @@ export default async function SkillsPage() {
           </div>
         </div>
       </Card>
-      {skillRows.length === 0 ? (
+      {assigned.length === 0 ? (
         <EmptyState title="No skills in the directory yet" body="Complete a categorized task or move content through the workflow to generate evidence." illustration="skills" />
       ) : (
         <div className="space-y-8">

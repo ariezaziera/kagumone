@@ -15,11 +15,13 @@ export default async function TeamPage() {
   if (!ctx) redirect("/login");
   const canInvite = hasPermission(ctx, "user:invite");
   const canEditTeam = hasPermission(ctx, "team:edit");
-  const [peopleRows, reporting, roleRows] = await Promise.all([
+  const [peopleRows, reportingRows, roleRows] = await Promise.all([
     listPeople(),
     db.select().from(reportingRelationships).where(eq(reportingRelationships.status, "active")),
     db.select().from(roles),
   ]);
+  const visibleIds = new Set(peopleRows.map((person) => person.id));
+  const reporting = reportingRows.filter((row) => visibleIds.has(row.personId) && visibleIds.has(row.superiorId));
   return (
     <div>
       <PageHeader module="people" title="Team" description="Directory and reporting relationships. New accounts get a temporary password and must replace it at first login." />

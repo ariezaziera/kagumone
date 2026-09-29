@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { toCsv } from "@/lib/utils";
-import { listPeople, listProjects, listTasks } from "@/lib/queries";
+import { listContents, listEquipment, listKpi, listPeople, listProjects, listTasks, listTime } from "@/lib/queries";
 import { isTaskOverdue } from "@/lib/permissions";
-import { db } from "@/lib/db";
-import { contents, equipment, kpiTargets, timeEntries } from "@/lib/db/schema";
 
 export async function GET(_request: NextRequest, { params }: { params: Promise<{ resource: string }> }) {
   const ctx = await getAuthContext();
@@ -18,10 +16,10 @@ export async function GET(_request: NextRequest, { params }: { params: Promise<{
   else if (resource === "tasks") rows = await listTasks();
   else if (resource === "overdue") rows = (await listTasks()).filter((t) => isTaskOverdue(t));
   else if (resource === "team") rows = await listPeople();
-  else if (resource === "content") rows = await db.select().from(contents);
-  else if (resource === "equipment") rows = await db.select().from(equipment);
-  else if (resource === "kpi") rows = await db.select().from(kpiTargets);
-  else if (resource === "time") rows = await db.select().from(timeEntries);
+  else if (resource === "content") rows = await listContents();
+  else if (resource === "equipment") rows = await listEquipment();
+  else if (resource === "kpi") rows = (await listKpi()).targets;
+  else if (resource === "time") rows = await listTime();
   else if (resource === "workload") {
     const tasks = await listTasks();
     const people = await listPeople();

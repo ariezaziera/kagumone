@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { contents, projectHistory, projectMembers, projectPhases, tasks } from "@/lib/db/schema";
 import { addProjectMember, updateProject } from "@/lib/actions/core";
-import { getProject, listPeople } from "@/lib/queries";
+import { getProject, keepUnlessDemoOwned, listPeople } from "@/lib/queries";
 import { getAuthContext } from "@/lib/auth/context";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, Field, Input, PageHeader, Select, Textarea, statusTone } from "@/components/ui";
@@ -16,7 +16,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
   if (!ctx) redirect("/login");
   const project = await getProject(id);
   if (!project) notFound();
-  const [members, phases, relatedTasks, relatedContent, history, peopleRows] = await Promise.all([
+  const [members, phases, taskRows, contentRows, history, peopleRows] = await Promise.all([
     db.select().from(projectMembers).where(eq(projectMembers.projectId, id)),
     db.select().from(projectPhases).where(eq(projectPhases.projectId, id)),
     db.select().from(tasks).where(eq(tasks.projectId, id)),
@@ -24,6 +24,8 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
     db.select().from(projectHistory).where(eq(projectHistory.projectId, id)),
     listPeople(),
   ]);
+  const relatedTasks = await keepUnlessDemoOwned(taskRows, (task) => [task.creatorId, task.assigneeId]);
+  const relatedContent = await keepUnlessDemoOwned(contentRows, (item) => [item.ownerId, item.creatorId]);
   const overdue = relatedTasks.filter((t) => t.status !== "completed" && t.officialDeadline && t.officialDeadline < new Date());
   const health =
     overdue.length > 2 ? "At risk (overdue work)" : overdue.length > 0 ? "Watch (some overdue tasks)" : "On track (no overdue tasks)";

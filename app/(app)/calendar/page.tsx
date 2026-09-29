@@ -2,10 +2,10 @@ import { and, gte, lte } from "drizzle-orm";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
-import { calendarEvents, contents, plannedWork, tasks, timeEntries } from "@/lib/db/schema";
+import { calendarEvents, contents, plannedWork, tasks } from "@/lib/db/schema";
 import { Card, PageHeader, iconButtonClass } from "@/components/ui";
 import { cn, formatDateTime } from "@/lib/utils";
-import { listProjects, listTasks } from "@/lib/queries";
+import { keepUnlessDemoOwned, listContents, listProjects, listTasks, listTime } from "@/lib/queries";
 import { PlannedWorkForm } from "@/components/planned-work-form";
 import { getAuthContext } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
@@ -78,17 +78,45 @@ export default async function CalendarPage({
 
   const [monthDeadlines, dayDeadlines, plannedMonth, plannedDay, eventsDay, monthEvents, pubsDay, logs, projects, allTasks, contentRows] =
     await Promise.all([
-      db.select().from(tasks).where(and(gte(tasks.officialDeadline, gridStart), lte(tasks.officialDeadline, gridEnd))),
-      db.select().from(tasks).where(and(gte(tasks.officialDeadline, start), lte(tasks.officialDeadline, end))),
-      db.select().from(plannedWork).where(and(gte(plannedWork.startAt, gridStart), lte(plannedWork.startAt, gridEnd))),
-      db.select().from(plannedWork).where(and(gte(plannedWork.startAt, start), lte(plannedWork.startAt, end))),
-      db.select().from(calendarEvents).where(and(gte(calendarEvents.startAt, start), lte(calendarEvents.startAt, end))),
-      db.select().from(calendarEvents).where(and(gte(calendarEvents.startAt, gridStart), lte(calendarEvents.startAt, gridEnd))),
-      db.select().from(contents).where(and(gte(contents.plannedPublishAt, start), lte(contents.plannedPublishAt, end))),
-      db.select().from(timeEntries),
+      db
+        .select()
+        .from(tasks)
+        .where(and(gte(tasks.officialDeadline, gridStart), lte(tasks.officialDeadline, gridEnd)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.creatorId, row.assigneeId])),
+      db
+        .select()
+        .from(tasks)
+        .where(and(gte(tasks.officialDeadline, start), lte(tasks.officialDeadline, end)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.creatorId, row.assigneeId])),
+      db
+        .select()
+        .from(plannedWork)
+        .where(and(gte(plannedWork.startAt, gridStart), lte(plannedWork.startAt, gridEnd)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.personId])),
+      db
+        .select()
+        .from(plannedWork)
+        .where(and(gte(plannedWork.startAt, start), lte(plannedWork.startAt, end)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.personId])),
+      db
+        .select()
+        .from(calendarEvents)
+        .where(and(gte(calendarEvents.startAt, start), lte(calendarEvents.startAt, end)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.ownerId])),
+      db
+        .select()
+        .from(calendarEvents)
+        .where(and(gte(calendarEvents.startAt, gridStart), lte(calendarEvents.startAt, gridEnd)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.ownerId])),
+      db
+        .select()
+        .from(contents)
+        .where(and(gte(contents.plannedPublishAt, start), lte(contents.plannedPublishAt, end)))
+        .then((rows) => keepUnlessDemoOwned(rows, (row) => [row.ownerId, row.creatorId])),
+      listTime(),
       listProjects(),
       listTasks(),
-      db.select().from(contents),
+      listContents(),
     ]);
 
   const logsDay = logs.filter((e) => e.workDate === selected);

@@ -1,17 +1,10 @@
 import Link from "next/link";
 import { createContent } from "@/lib/actions/core";
-import { listProjects } from "@/lib/queries";
-import { db } from "@/lib/db";
-import { contents } from "@/lib/db/schema";
+import { listContents, listProjects } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, statusTone } from "@/components/ui";
-import { desc } from "drizzle-orm";
-
 export default async function ContentPage() {
-  const [rows, projects] = await Promise.all([
-    db.select().from(contents).orderBy(desc(contents.updatedAt)),
-    listProjects(),
-  ]);
+  const [rows, projects] = await Promise.all([listContents(), listProjects()]);
   return (
     <div>
       <PageHeader module="content" title="Content" description="Lifecycle records. Planned is not the same as published or KPI count." />

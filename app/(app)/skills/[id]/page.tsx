@@ -6,6 +6,7 @@ import { people, personSkills, skillEvidence, skills } from "@/lib/db/schema";
 import { Card, PageHeader } from "@/components/ui";
 import { INFERRED_LEVELS, inferredLevelLabel } from "@/lib/services/skills";
 import { cn } from "@/lib/utils";
+import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 
 function initials(name: string) {
   return name
@@ -20,9 +21,12 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ id
   const { id } = await params;
   const [skill] = await db.select().from(skills).where(eq(skills.id, id));
   if (!skill) notFound();
-  const assigned = await db.select().from(personSkills).where(eq(personSkills.skillId, id));
-  const peopleRows = await db.select().from(people);
-  const evidence = await db.select().from(skillEvidence);
+  const hidingDemo = await hideDemoWorkspace();
+  const assignedRows = await db.select().from(personSkills).where(eq(personSkills.skillId, id));
+  const peopleRows = (await db.select().from(people)).filter((person) => !hidingDemo || !person.isDemo);
+  const visibleIds = new Set(peopleRows.map((person) => person.id));
+  const assigned = assignedRows.filter((row) => visibleIds.has(row.personId));
+  const evidence = (await db.select().from(skillEvidence)).filter((row) => assigned.some((holder) => holder.id === row.personSkillId));
   return (
     <div>
       <PageHeader module="skills" title={skill.name} description={skill.description ?? "Observed from completed work in this category."} />

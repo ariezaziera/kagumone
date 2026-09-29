@@ -1,13 +1,12 @@
-import { eq } from "drizzle-orm";
-import { db } from "@/lib/db";
-import { contents } from "@/lib/db/schema";
 import { publishContent } from "@/lib/actions/core";
+import { listContents } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Card, EmptyState, Field, Input, PageHeader, Select } from "@/components/ui";
 
 export default async function PublishingPage() {
-  const ready = await db.select().from(contents).where(eq(contents.stage, "ready_to_post"));
-  const published = await db.select().from(contents).where(eq(contents.stage, "published"));
+  const rows = await listContents();
+  const ready = rows.filter((row) => row.stage === "ready_to_post");
+  const published = rows.filter((row) => row.stage === "published");
   return (
     <div>
       <PageHeader module="content" title="Publishing" description="Approved content is recorded with platform, URL, and actual date." />

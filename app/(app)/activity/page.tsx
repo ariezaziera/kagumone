@@ -1,14 +1,9 @@
-import { db } from "@/lib/db";
-import { activityLogs, auditLogs } from "@/lib/db/schema";
+import { listActivity, listAudit } from "@/lib/queries";
 import { Card, PageHeader } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
-import { desc } from "drizzle-orm";
 
 export default async function ActivityPage() {
-  const [activity, audit] = await Promise.all([
-    db.select().from(activityLogs).orderBy(desc(activityLogs.createdAt)).limit(100),
-    db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(50),
-  ]);
+  const [activity, audit] = await Promise.all([listActivity(100), listAudit(50)]);
   return (
     <div>
       <PageHeader module="admin" title="Activity / History" description="Activity is human-readable. Audit is system-level change trace." />
