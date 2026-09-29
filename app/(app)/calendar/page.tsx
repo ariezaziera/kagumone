@@ -4,7 +4,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { db } from "@/lib/db";
 import { calendarEvents, contents, plannedWork, tasks } from "@/lib/db/schema";
 import { Card, PageHeader, iconButtonClass } from "@/components/ui";
-import { cn, formatDateTime } from "@/lib/utils";
+import { cn, formatDateTime, readableLabel } from "@/lib/utils";
 import { keepUnlessDemoOwned, listContents, listProjects, listTasks, listTime } from "@/lib/queries";
 import { PlannedWorkForm } from "@/components/planned-work-form";
 import { getAuthContext } from "@/lib/auth/context";
@@ -167,7 +167,7 @@ export default async function CalendarPage({
         .map((event) => monthLine(event.id, briefTitle(event.title), "events")),
       ...plannedMonth
         .filter((item) => item.startAt && ymd(item.startAt) === dateStr)
-        .map((item) => monthLine(item.id, briefTitle(item.title || item.workType), "planned")),
+        .map((item) => monthLine(item.id, briefTitle(item.title || readableLabel(item.workType)), "planned")),
       ...contentRows
         .filter((item) => item.plannedPublishAt && ymd(item.plannedPublishAt) === dateStr)
         .map((item) => monthLine(item.id, briefTitle(item.title), "content")),
@@ -375,7 +375,7 @@ export default async function CalendarPage({
                   {plannedDay.map((p) => (
                     <div key={p.id} className="rounded-[12px] border border-info/30 bg-info-soft px-4 py-2.5 text-sm">
                       <Link className="font-semibold text-info" href={p.taskId ? `/tasks/${p.taskId}` : p.contentId ? `/content/${p.contentId}` : p.projectId ? `/projects/${p.projectId}` : "/calendar"}>
-                        {p.title || p.workType}
+                        {p.title || readableLabel(p.workType)}
                       </Link>
                       <p className="text-xs text-secondary">{formatDateTime(p.startAt)} – {formatDateTime(p.endAt)}</p>
                       {p.personId === ctx.person.id ? (
@@ -490,7 +490,7 @@ function DayTimeline({
     const end = klMinutes(item.endAt);
     if (start === null || end === null || end <= start) continue;
     const href = item.taskId ? `/tasks/${item.taskId}` : item.contentId ? `/content/${item.contentId}` : item.projectId ? `/projects/${item.projectId}` : undefined;
-    blocks.push({ id: item.id, title: briefTitle(item.title || item.workType), href, start, end, soft: "bg-info-soft", text: "text-info" });
+    blocks.push({ id: item.id, title: briefTitle(item.title || readableLabel(item.workType)), href, start, end, soft: "bg-info-soft", text: "text-info" });
   }
   for (const item of events) {
     const start = klMinutes(item.startAt);

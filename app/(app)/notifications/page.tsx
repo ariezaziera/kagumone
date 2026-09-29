@@ -3,7 +3,7 @@ import { markNotificationsRead } from "@/lib/actions/core";
 import { getAuthContext } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
-import { Button, Card, EmptyState, PageHeader, buttonClass } from "@/components/ui";
+import { Button, Card, EmptyState, PageHeader, RecordList, buttonClass } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -58,15 +58,17 @@ export default async function NotificationsPage({ searchParams }: { searchParams
       {filtered.length === 0 ? (
         <EmptyState title="All quiet here" body="You don't have any new notifications." illustration="quiet" />
       ) : (
-        filtered.map((n) => (
-          <Card key={n.id} className="mb-2">
+        <RecordList className="space-y-2">
+        {filtered.map((n) => (
+          <Card key={n.id} data-record="" data-sort={n.createdAt ? new Date(n.createdAt).toISOString() : n.title}>
             <Link href={n.href || "#"} className="font-medium text-info">
               {n.title}
             </Link>
             <p className="text-sm">{n.body}</p>
             <p className="text-xs text-secondary">{formatDateTime(n.createdAt)}</p>
           </Card>
-        ))
+        ))}
+        </RecordList>
       )}
     </div>
   );

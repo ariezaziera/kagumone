@@ -4,6 +4,7 @@ import { useState } from "react";
 import { askAssistant } from "@/lib/actions/auth-extra";
 import { BrandWordmark, Button, Card, PageHeader, Textarea } from "@/components/ui";
 import { Illustration } from "@/components/illustrations";
+import { readableLabel } from "@/lib/utils";
 
 const PROMPTS = ["Summarise my workload", "Find overdue work", "Summarise this project", "Find related records"];
 
@@ -84,7 +85,7 @@ export default function AiPage() {
           <ul className="kagum-list mt-2 text-sm">
             {sources.map((s) => (
               <li key={`${s.type}-${s.id}`}>
-                {s.type}: {s.label}
+                {readableLabel(s.type)}: {s.label}
               </li>
             ))}
           </ul>

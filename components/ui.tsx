@@ -1,4 +1,4 @@
-import { Children, cloneElement, isValidElement, type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type ReactElement, type ReactNode, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
+import { type ButtonHTMLAttributes, type HTMLAttributes, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes } from "react";
 import {
   BarChart3,
   BookOpen,
@@ -14,7 +14,7 @@ import {
   Users,
 } from "lucide-react";
 import { Illustration, type IllustrationName } from "@/components/illustrations";
-import { cn } from "@/lib/utils";
+import { cn, readableLabel } from "@/lib/utils";
 
 export type ModuleKey =
   | "dashboard"
@@ -208,8 +208,15 @@ export function Badge({
     orange: "bg-orange-soft text-orange",
     pink: "bg-pink-soft text-pink",
   };
-  const label = typeof children === "string" ? children.replaceAll("_", " ") : children;
-  return <span className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-normal capitalize", map[tone])}>{label}</span>;
+  const label = typeof children === "string" ? readableLabel(children) : children;
+  return (
+    <span
+      data-label-text={typeof children === "string" ? readableLabel(children) : undefined}
+      className={cn("inline-flex shrink-0 items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold leading-normal", map[tone])}
+    >
+      {label}
+    </span>
+  );
 }
 
 const STATUS_TONES: Record<string, BadgeTone> = {
@@ -300,53 +307,4 @@ export function EmptyState({
   return <Card className="flex flex-col items-center px-6 py-8 text-center">{content}</Card>;
 }
 
-function textOf(node: ReactNode): string {
-  if (node == null || typeof node === "boolean") return "";
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) return node.map(textOf).join("");
-  if (isValidElement<{ children?: ReactNode }>(node)) return textOf(node.props.children);
-  return "";
-}
-
-function collectHeaders(node: ReactNode, into: string[]) {
-  if (!isValidElement<{ children?: ReactNode }>(node)) return;
-  if (node.type === "th") {
-    into.push(textOf(node.props.children).replace(/\s+/g, " ").trim());
-    return;
-  }
-  Children.forEach(node.props.children, (child) => collectHeaders(child, into));
-}
-
-function stampRow(row: ReactElement<{ children?: ReactNode }>, headers: string[]) {
-  let index = 0;
-  const children = Children.map(row.props.children, (cell) => {
-    if (!isValidElement<{ children?: ReactNode }>(cell) || cell.type !== "td") return cell;
-    const label = headers[index] ?? "";
-    index += 1;
-    return cloneElement(cell, { "data-label": label } as { children?: ReactNode });
-  });
-  return cloneElement(row, undefined, children);
-}
-
-function stampBody(node: ReactNode, headers: string[]): ReactNode {
-  if (!isValidElement<{ children?: ReactNode }>(node)) return node;
-  if (node.type === "tr") return stampRow(node, headers);
-  if (node.type === "tbody") {
-    const children = Children.map(node.props.children, (child) => stampBody(child, headers));
-    return cloneElement(node, undefined, children);
-  }
-  return node;
-}
-
-export function Table({ children }: { children: ReactNode }) {
-  const headers: string[] = [];
-  Children.forEach(children, (child) => {
-    if (isValidElement(child) && child.type === "thead") collectHeaders(child, headers);
-  });
-  const stamped = Children.map(children, (child) => stampBody(child, headers));
-  return (
-    <div className="kagum-table">
-      <table className="w-full text-left text-[13px]">{stamped}</table>
-    </div>
-  );
-}
+export { RecordList, Table } from "@/components/list-controls";

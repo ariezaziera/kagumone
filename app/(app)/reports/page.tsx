@@ -3,6 +3,7 @@ import { listProjects, listTasks } from "@/lib/queries";
 import { Card, PageHeader, buttonClass } from "@/components/ui";
 import { isTaskOverdue } from "@/lib/permissions";
 import { redirect } from "next/navigation";
+import { readableLabel } from "@/lib/utils";
 
 export default async function ReportsPage() {
   const ctx = await getAuthContext();
@@ -31,8 +32,8 @@ export default async function ReportsPage() {
       </div>
       <div className="mt-4 flex flex-wrap gap-2 text-sm">
         {["projects", "tasks", "overdue", "content", "kpi", "equipment", "workload", "time", "team"].map((r) => (
-          <a key={r} className={buttonClass("secondary", "px-3 py-1.5 capitalize")} href={`/api/export/${r}`}>
-            Export {r} CSV
+          <a key={r} className={buttonClass("secondary", "px-3 py-1.5")} href={`/api/export/${r}`}>
+            Export {readableLabel(r)} CSV
           </a>
         ))}
       </div>

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Button, Card, Field, Input, Select } from "@/components/ui";
+import { readableLabel } from "@/lib/utils";
 
 export function FileUpload() {
   const [status, setStatus] = useState<string | null>(null);
@@ -24,12 +25,11 @@ export function FileUpload() {
         </Field>
         <Field label="Related type">
           <Select name="relatedType">
-            <option>project</option>
-            <option>task</option>
-            <option>content</option>
-            <option>equipment</option>
-            <option>handover</option>
-            <option>knowledge</option>
+            {["project", "task", "content", "equipment", "handover", "knowledge"].map((type) => (
+              <option key={type} value={type}>
+                {readableLabel(type)}
+              </option>
+            ))}
           </Select>
         </Field>
         <Field label="Related ID">

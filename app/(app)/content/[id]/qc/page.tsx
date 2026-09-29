@@ -3,6 +3,7 @@ import { submitQc } from "@/lib/actions/core";
 import { getContent } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, PageHeader, Select, Textarea } from "@/components/ui";
+import { readableLabel } from "@/lib/utils";
 
 export default async function ContentQcPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,15 +18,15 @@ export default async function ContentQcPage({ params }: { params: Promise<{ id: 
           <input type="hidden" name="contentId" value={id} />
           <Field label="Stage">
             <Select name="stage" defaultValue="qc1">
-              <option>self_qc</option>
-              <option>qc1</option>
-              <option>qc2</option>
+              <option value="self_qc">{readableLabel("self_qc")}</option>
+              <option value="qc1">{readableLabel("qc1")}</option>
+              <option value="qc2">{readableLabel("qc2")}</option>
             </Select>
           </Field>
           <Field label="Decision">
             <Select name="status">
-              <option value="passed">passed</option>
-              <option value="corrections">corrections required</option>
+              <option value="passed">{readableLabel("passed")}</option>
+              <option value="corrections">Corrections required</option>
             </Select>
           </Field>
           <Field label="Checklist">

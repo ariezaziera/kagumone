@@ -6,6 +6,7 @@ import { deriveEquipmentStatus } from "@/lib/services/org";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, statusTone } from "@/components/ui";
 import { listEquipment, listProjects, listTasks, openLoans } from "@/lib/queries";
+import { readableLabel } from "@/lib/utils";
 import Link from "next/link";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
@@ -71,7 +72,7 @@ export default async function EquipmentPage() {
                   <td className="px-3 py-2">
                     <Badge tone={statusTone(status)}>{status}</Badge>
                   </td>
-                  <td className="px-3 py-2">{item.condition}</td>
+                  <td className="px-3 py-2">{readableLabel(item.condition)}</td>
                 </tr>
               ))}
             </tbody>
@@ -89,7 +90,7 @@ export default async function EquipmentPage() {
                 <Input name="assetCode" required />
               </Field>
               <Field label="Category">
-                <Input name="category" defaultValue="camera" />
+                <Input name="category" defaultValue="Camera" />
               </Field>
             </ActionForm>
           </Card>

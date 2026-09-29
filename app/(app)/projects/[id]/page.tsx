@@ -6,8 +6,8 @@ import { addProjectMember, updateProject } from "@/lib/actions/core";
 import { getProject, keepUnlessDemoOwned, listPeople } from "@/lib/queries";
 import { getAuthContext } from "@/lib/auth/context";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Card, Field, Input, PageHeader, Select, Textarea, statusTone } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { Badge, Card, Field, Input, PageHeader, RecordList, Select, Textarea, statusTone } from "@/components/ui";
+import { formatDate, readableLabel } from "@/lib/utils";
 import Link from "next/link";
 
 export default async function ProjectDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -48,7 +48,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
           <ol className="kagum-list text-sm">
             {phases.map((p) => (
               <li key={p.id}>
-                {p.name} — {p.status}
+                {p.name} — {readableLabel(p.status)}
               </li>
             ))}
           </ol>
@@ -62,10 +62,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
             </Field>
             <Field label="Status">
               <Select name="status" defaultValue={project.status}>
-                <option>planning</option>
-                <option>active</option>
-                <option>completed</option>
-                <option>archived</option>
+                <option value="planning">Planning</option>
+                <option value="active">Active</option>
+                <option value="completed">Completed</option>
+                <option value="archived">Archived</option>
               </Select>
             </Field>
             <Field label="Notes">
@@ -95,9 +95,10 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">Related tasks</h2>
+          <RecordList>
           <ul className="kagum-list text-sm">
             {relatedTasks.map((t) => (
-              <li key={t.id}>
+              <li key={t.id} data-record="" data-sort={t.officialDeadline ? new Date(t.officialDeadline).toISOString() : ""}>
                 <Link className="text-info" href={`/tasks/${t.id}`}>
                   {t.title}
                 </Link>{" "}
@@ -105,28 +106,33 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               </li>
             ))}
           </ul>
+          </RecordList>
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">Related content</h2>
+          <RecordList>
           <ul className="kagum-list text-sm">
             {relatedContent.map((c) => (
-              <li key={c.id}>
+              <li key={c.id} data-record="">
                 <Link className="text-info" href={`/content/${c.id}`}>
                   {c.title}
                 </Link>
               </li>
             ))}
           </ul>
+          </RecordList>
         </Card>
         <Card>
           <h2 className="mb-2 font-medium">History</h2>
+          <RecordList>
           <ul className="kagum-list text-sm text-secondary">
             {history.map((h) => (
-              <li key={h.id}>
+              <li key={h.id} data-record="" data-sort={h.createdAt ? new Date(h.createdAt).toISOString() : ""}>
                 {h.field}: {h.previousValue} → {h.newValue}
               </li>
             ))}
           </ul>
+          </RecordList>
           <Link className="mt-2 inline-block text-sm text-info" href="/handover">
             Project handover
           </Link>

@@ -3,7 +3,8 @@ import { Archive, FileText, Folder, Link2, ListChecks, NotebookPen } from "lucid
 import { db } from "@/lib/db";
 import { handoverItems } from "@/lib/db/schema";
 import { listFiles, listHandovers, listPeople, listProjects } from "@/lib/queries";
-import { Badge, Card, EmptyState, PageHeader, statusTone } from "@/components/ui";
+import { Badge, Card, EmptyState, PageHeader, RecordList, statusTone } from "@/components/ui";
+import { readableLabel } from "@/lib/utils";
 import { HandoverForm } from "./handover-form";
 
 const SECTION_ORDER = ["task", "pending_note", "project_update", "template", "link", "folder", "file"] as const;
@@ -16,7 +17,7 @@ function sectionTitle(kind: string) {
   if (kind === "link") return "Links";
   if (kind === "folder") return "Folders";
   if (kind === "file") return "Files";
-  return kind.replaceAll("_", " ");
+  return readableLabel(kind);
 }
 
 export default async function HandoverPage() {
@@ -45,11 +46,12 @@ export default async function HandoverPage() {
           {rows.length === 0 ? (
             <EmptyState title="No handovers" body="Start a handover when responsibility changes." illustration="empty-folder" />
           ) : (
-            rows.map((handover) => {
+            <RecordList className="space-y-3">
+            {rows.map((handover) => {
               const own = items.filter((item) => item.handoverId === handover.id);
               const kinds = SECTION_ORDER.filter((kind) => own.some((item) => item.kind === kind));
               return (
-                <Card key={handover.id} accent="charcoal">
+                <Card key={handover.id} accent="charcoal" data-record="">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="text-base font-semibold">
@@ -119,7 +121,8 @@ export default async function HandoverPage() {
                   </div>
                 </Card>
               );
-            })
+            })}
+            </RecordList>
           )}
         </div>
         <Card>

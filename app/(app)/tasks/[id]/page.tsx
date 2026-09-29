@@ -19,7 +19,7 @@ import { getTask, listPeople, listProjects } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { CompletionNotice } from "@/components/completion-notice";
 import { Badge, Button, Card, Field, Input, PageHeader, Select, Textarea, statusTone } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 import { COLLAB_ROLES, TASK_TRANSITIONS, formatOverdueLabel, type TaskStatus } from "@/lib/permissions";
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -53,7 +53,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
   const assigner = peopleRows.find((p) => p.id === task.creatorId);
   const project = projects.find((p) => p.id === task.projectId);
   const latest = completions[completions.length - 1];
-  const statusLabel = latest ? "Completion Submitted" : task.status.replaceAll("_", " ");
+  const statusLabel = latest ? "Completion Submitted" : readableLabel(task.status);
 
   return (
     <div>
@@ -100,7 +100,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
             </div>
             <div>
               <dt className="text-xs text-secondary">Task Type / Category</dt>
-              <dd>{task.category || "—"}</dd>
+              <dd>{task.category ? readableLabel(task.category) : "—"}</dd>
             </div>
             <div className="sm:col-span-2">
               <dt className="text-xs text-secondary">What Needs To Be Done</dt>
@@ -108,7 +108,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
             </div>
             <div>
               <dt className="text-xs text-secondary">Priority</dt>
-              <dd>{task.priority}</dd>
+              <dd>{readableLabel(task.priority)}</dd>
             </div>
             <div>
               <dt className="text-xs text-error">Official Deadline</dt>
@@ -117,7 +117,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           </dl>
           <div>
             <p className="text-xs text-secondary">Subtasks</p>
-            {subtasks.length === 0 ? <p>—</p> : <div className="kagum-list mt-2">{subtasks.map((s) => <p key={s.id}>{s.title} ({s.status})</p>)}</div>}
+            {subtasks.length === 0 ? <p>—</p> : <div className="kagum-list mt-2">{subtasks.map((s) => <p key={s.id}>{s.title} ({readableLabel(s.status)})</p>)}</div>}
           </div>
           <div>
             <p className="text-xs text-secondary">Expected Deliverables</p>
@@ -188,7 +188,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
           <ul className="kagum-list mt-3 text-xs text-secondary">
             {extensions.map((e) => (
               <li key={e.id}>
-                {e.status}: original {formatDateTime(e.originalDeadline)}
+                {readableLabel(e.status)}: original {formatDateTime(e.originalDeadline)}
               </li>
             ))}
           </ul>

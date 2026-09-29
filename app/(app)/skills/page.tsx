@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { db } from "@/lib/db";
 import { personSkills, skillCategories, skillEvidence, skills, people } from "@/lib/db/schema";
-import { Card, EmptyState, PageHeader } from "@/components/ui";
+import { Card, EmptyState, PageHeader, RecordList } from "@/components/ui";
 import { Illustration } from "@/components/illustrations";
 import { inferSkillsForEveryone, inferredLevelLabel, INFERRED_LEVELS } from "@/lib/services/skills";
 import { getAuthContext } from "@/lib/auth/context";
@@ -116,9 +116,9 @@ export default async function SkillsPage() {
       {assigned.length === 0 ? (
         <EmptyState title="No skills in the directory yet" body="Complete a categorized task or move content through the workflow to generate evidence." illustration="skills" />
       ) : (
-        <div className="space-y-8">
+        <RecordList className="space-y-8">
           {groups.map((group) => (
-            <section key={group.category.id}>
+            <section key={group.category.id} data-record-group="">
               <h2 className="mb-3 text-sm font-semibold uppercase tracking-[0.12em] text-muted">{group.category.name}</h2>
               <div className="grid gap-3 md:grid-cols-2">
                 {group.skills.map((skill) => {
@@ -126,7 +126,7 @@ export default async function SkillsPage() {
                   const evidenceCount = evidence.filter((row) => holders.some((holder) => holder.id === row.personSkillId)).length;
                   const Icon = SKILL_ICONS[skill.name] ?? Sparkles;
                   return (
-                    <Card key={skill.id} className="flex flex-col gap-3">
+                    <Card key={skill.id} data-record="" className="flex flex-col gap-3">
                       <div className="flex items-start gap-3">
                         <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-[14px] bg-purple-soft text-purple">
                           <Icon size={20} aria-hidden />
@@ -167,7 +167,7 @@ export default async function SkillsPage() {
               </div>
             </section>
           ))}
-        </div>
+        </RecordList>
       )}
     </div>
   );

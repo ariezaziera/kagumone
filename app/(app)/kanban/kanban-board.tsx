@@ -8,7 +8,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { useRouter } from "next/navigation";
 import { TASK_STATUSES, canTransitionTask, type TaskStatus } from "@/lib/permissions";
 import { Badge, Card, iconButtonClass, statusTone } from "@/components/ui";
-import { cn, formatDate } from "@/lib/utils";
+import { cn, formatDate, readableLabel } from "@/lib/utils";
 import { transitionTask } from "@/lib/actions/core";
 
 type CardTask = {
@@ -20,7 +20,7 @@ type CardTask = {
 };
 
 function statusLabel(status: string) {
-  return status.replaceAll("_", " ");
+  return readableLabel(status);
 }
 
 function adjacentMove(from: string, direction: -1 | 1): TaskStatus | null {

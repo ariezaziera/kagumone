@@ -7,6 +7,7 @@ import { reportingRelationships, roles } from "@/lib/db/schema";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, PageHeader, Select, Table } from "@/components/ui";
 import { eq } from "drizzle-orm";
+import { readableLabel } from "@/lib/utils";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
 
@@ -43,12 +44,12 @@ export default async function TeamPage() {
                   <Link className="text-info" href={`/team/${p.id}`}>
                     {p.fullName}
                   </Link>
-                  {p.isDemo ? <span className="ml-2 text-xs text-warning">demo</span> : null}
+                  {p.isDemo ? <span className="ml-2 text-xs text-warning">Demo</span> : null}
                 </td>
                 <td className="px-3 py-2">{p.username ?? "—"}</td>
-                <td className="px-3 py-2">{p.positionTitle}</td>
-                <td className="px-3 py-2">{p.employmentType}</td>
-                <td className="px-3 py-2">{p.organizationalStatus}</td>
+                <td className="px-3 py-2">{p.positionTitle ? readableLabel(p.positionTitle) : "—"}</td>
+                <td className="px-3 py-2">{readableLabel(p.employmentType)}</td>
+                <td className="px-3 py-2">{readableLabel(p.organizationalStatus)}</td>
               </tr>
             ))}
           </tbody>

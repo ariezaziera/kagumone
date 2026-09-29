@@ -4,7 +4,7 @@ import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { listPeople, listProjects, listTasks } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, buttonClass, statusTone } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { formatDate, readableLabel } from "@/lib/utils";
 import { isTaskOverdue } from "@/lib/permissions";
 import { TASK_CATEGORIES } from "@/lib/permissions";
 import { redirect } from "next/navigation";
@@ -70,8 +70,10 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                   <td className="px-3 py-2">
                     <Badge tone={statusTone(t.status)}>{t.status}</Badge>
                   </td>
-                  <td className="px-3 py-2">{t.priority}</td>
-                  <td className="px-3 py-2">{formatDate(t.officialDeadline)}</td>
+                  <td className="px-3 py-2">{readableLabel(t.priority)}</td>
+                  <td className="px-3 py-2" data-sort={t.officialDeadline ? new Date(t.officialDeadline).toISOString() : ""}>
+                    {formatDate(t.officialDeadline)}
+                  </td>
                 </tr>
               ))}
             </tbody>

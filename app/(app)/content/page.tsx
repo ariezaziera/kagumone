@@ -3,6 +3,7 @@ import { createContent } from "@/lib/actions/core";
 import { listContents, listProjects } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, statusTone } from "@/components/ui";
+import { readableLabel } from "@/lib/utils";
 export default async function ContentPage() {
   const [rows, projects] = await Promise.all([listContents(), listProjects()]);
   return (
@@ -32,8 +33,8 @@ export default async function ContentPage() {
                   <td className="px-3 py-2">
                     <Badge tone={statusTone(c.stage)}>{c.stage}</Badge>
                   </td>
-                  <td className="px-3 py-2">{c.platform}</td>
-                  <td className="px-3 py-2">{c.pillar}</td>
+                  <td className="px-3 py-2">{c.platform ? readableLabel(c.platform) : "—"}</td>
+                  <td className="px-3 py-2">{c.pillar ? readableLabel(c.pillar) : "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -50,9 +51,9 @@ export default async function ContentPage() {
             </Field>
             <Field label="Platform">
               <Select name="platform">
-                <option value="instagram">instagram</option>
-                <option value="facebook">facebook</option>
-                <option value="tiktok">tiktok</option>
+                <option value="instagram">Instagram</option>
+                <option value="facebook">Facebook</option>
+                <option value="tiktok">TikTok</option>
               </Select>
             </Field>
             <Field label="Project">

@@ -1,6 +1,6 @@
 import { listFiles } from "@/lib/queries";
 import { EmptyState, PageHeader, Table } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 import { FileUpload } from "./upload";
 
 export default async function FilesPage() {
@@ -25,9 +25,11 @@ export default async function FilesPage() {
               <tr key={f.id} className="border-t border-border">
                 <td className="px-3 py-2">{f.filename}</td>
                 <td className="px-3 py-2">
-                  {f.relatedType} {f.relatedId}
+                  {f.relatedType ? readableLabel(f.relatedType) : "—"} {f.relatedId}
                 </td>
-                <td className="px-3 py-2">{formatDateTime(f.createdAt)}</td>
+                <td className="px-3 py-2" data-sort={f.createdAt ? new Date(f.createdAt).toISOString() : ""}>
+                  {formatDateTime(f.createdAt)}
+                </td>
               </tr>
             ))}
           </tbody>

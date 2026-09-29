@@ -6,6 +6,7 @@ import { ActionForm } from "@/components/action-form";
 import { Card, Field, Input, PageHeader, Textarea } from "@/components/ui";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
+import { readableLabel } from "@/lib/utils";
 
 export default async function AdminPage() {
   const ctx = await getAuthContext();
@@ -57,7 +58,7 @@ export default async function AdminPage() {
           <div className="kagum-list mt-2">
           {invites.map((i) => (
             <p key={i.id} className="text-sm">
-              {i.email} — {i.status}
+              {i.email} — {readableLabel(i.status)}
             </p>
           ))}
           </div>
@@ -67,7 +68,7 @@ export default async function AdminPage() {
           <div className="kagum-list mt-2">
           {audit.map((a) => (
             <p key={a.id} className="text-sm">
-              {a.action}
+              {readableLabel(a.action)}
             </p>
           ))}
           </div>

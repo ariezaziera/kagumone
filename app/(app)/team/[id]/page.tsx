@@ -8,7 +8,7 @@ import { ActionForm } from "@/components/action-form";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileForm } from "@/components/profile-form";
 import { Card, Field, Input, PageHeader, Textarea } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { formatDate, readableLabel } from "@/lib/utils";
 import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import { listPeople } from "@/lib/queries";
 import { ResetPasswordForm } from "../reset-password-form";
@@ -32,7 +32,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
   const canReset = hasPermission(ctx, "user:invite") && person.id !== ctx.person.id && Boolean(person.userId);
   return (
     <div>
-      <PageHeader module="people" title={person.fullName} description={`${person.positionTitle ?? ""} · ${person.employmentType}`} />
+      <PageHeader module="people" title={person.fullName} description={`${person.positionTitle ? readableLabel(person.positionTitle) : "—"} · ${readableLabel(person.employmentType)}`} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-1 text-sm">
           <PersonAvatar
@@ -41,7 +41,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
             hasPhoto={Boolean(person.photoStorageKey)}
             version={person.updatedAt.getTime()}
           />
-          <p className="pt-2">Status: {person.organizationalStatus}</p>
+          <p className="pt-2">Status: {readableLabel(person.organizationalStatus)}</p>
           <p>Last working day: {formatDate(person.lastWorkingDay)}</p>
           <p>Email: {person.email}</p>
           <p>Username: {person.username ?? "—"}</p>

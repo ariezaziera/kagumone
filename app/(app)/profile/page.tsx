@@ -9,7 +9,7 @@ import { Badge, Card, EmptyState, PageHeader } from "@/components/ui";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileForm } from "@/components/profile-form";
 import { inferSkillsForPerson, inferredLevelLabel, INFERRED_LEVELS } from "@/lib/services/skills";
-import { cn } from "@/lib/utils";
+import { cn, readableLabel } from "@/lib/utils";
 
 function LevelMeter({ level }: { level: number }) {
   return (
@@ -51,8 +51,8 @@ export default async function ProfilePage() {
   const facts = [
     { label: "Email", value: person.email },
     { label: "Username", value: person.username ?? "—" },
-    { label: "Position", value: person.positionTitle ?? "—" },
-    { label: "Employment", value: person.employmentType.replaceAll("_", " ") },
+    { label: "Position", value: person.positionTitle ? readableLabel(person.positionTitle) : "—" },
+    { label: "Employment", value: readableLabel(person.employmentType) },
     { label: "Reports to", value: superiors.length ? superiors.join(", ") : "—" },
     { label: "Open tasks", value: String(mine.length) },
   ];
@@ -80,10 +80,10 @@ export default async function ProfilePage() {
               {ctx.roleKeys.length === 0 ? <Badge>No role</Badge> : null}
               {ctx.roleKeys.map((role) => (
                 <Badge key={role} tone="pink">
-                  {role.replaceAll("_", " ")}
+                  {role}
                 </Badge>
               ))}
-              <Badge tone="neutral">{person.organizationalStatus.replaceAll("_", " ")}</Badge>
+              <Badge tone="neutral">{person.organizationalStatus}</Badge>
             </div>
           </div>
         </div>

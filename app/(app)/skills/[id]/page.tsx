@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { people, personSkills, skillEvidence, skills } from "@/lib/db/schema";
 import { Card, PageHeader } from "@/components/ui";
 import { INFERRED_LEVELS, inferredLevelLabel } from "@/lib/services/skills";
-import { cn } from "@/lib/utils";
+import { cn, readableLabel } from "@/lib/utils";
 import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 
 function initials(name: string) {
@@ -82,7 +82,7 @@ export default async function SkillDetailPage({ params }: { params: Promise<{ id
                           Content record
                         </Link>
                       ) : (
-                        <span className="font-semibold capitalize">{note.relatedType?.replaceAll("_", " ")}</span>
+                        <span className="font-semibold">{note.relatedType ? readableLabel(note.relatedType) : "—"}</span>
                       )}
                       {note.note ? <p className="mt-1 whitespace-pre-wrap text-secondary">{note.note}</p> : null}
                     </li>

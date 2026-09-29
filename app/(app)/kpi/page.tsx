@@ -2,8 +2,9 @@ import { upsertKpiTarget } from "@/lib/actions/core";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { listKpi, listPeople } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
-import { Card, Field, Input, PageHeader, Select } from "@/components/ui";
+import { Card, Field, Input, PageHeader, RecordList, Select } from "@/components/ui";
 import { redirect } from "next/navigation";
+import { readableLabel } from "@/lib/utils";
 
 export default async function KpiPage() {
   const ctx = await getAuthContext();
@@ -22,15 +23,15 @@ export default async function KpiPage() {
             : "You can see the KPI target set for you. Staff and interns cannot set or change KPI targets."
         }
       />
-      <div className="grid gap-4 lg:grid-cols-2">
+      <RecordList className="grid gap-4 lg:grid-cols-2">
         {visible.map((t) => {
           const period = periods.find((p) => p.id === t.periodId);
           const person = peopleRows.find((p) => p.id === t.personId);
           return (
-            <Card key={t.id}>
+            <Card key={t.id} data-record="">
               <p className="font-medium">{person?.fullName}</p>
               <p className="text-sm text-secondary">
-                {t.category} · {period?.name} · target {t.targetValue} {t.unit}
+                {readableLabel(t.category)} · {period?.name} · target {t.targetValue} {readableLabel(t.unit)}
               </p>
             </Card>
           );
@@ -63,7 +64,7 @@ export default async function KpiPage() {
                 </Select>
               </Field>
               <Field label="Category">
-                <Input name="category" defaultValue="content" />
+                <Input name="category" defaultValue="Content" />
               </Field>
               <Field label="Target">
                 <Input name="targetValue" type="number" required />
@@ -74,7 +75,7 @@ export default async function KpiPage() {
             </ActionForm>
           </Card>
         ) : null}
-      </div>
+      </RecordList>
     </div>
   );
 }

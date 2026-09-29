@@ -44,7 +44,7 @@ import { recordActivity, recordAudit, notify } from "@/lib/services/records";
 import { assertMaxThreeSuperiors, cannotDeleteSelf, deriveEquipmentStatus } from "@/lib/services/org";
 import { inferSkillsFromRecentWork } from "@/lib/services/skills";
 import { canTransitionTask, overdueDays, type TaskStatus } from "@/lib/permissions";
-import { newId, now } from "@/lib/utils";
+import { newId, now, readableLabel } from "@/lib/utils";
 import { createSignupAuth } from "@/lib/auth/signup";
 import { temporaryPassword } from "@/lib/auth/temporary-password";
 import { storeFile } from "@/lib/integrations/storage";
@@ -310,7 +310,7 @@ export async function transitionTask(taskId: string, next: TaskStatus) {
     action: "task.transitioned",
     entityType: "task",
     entityId: taskId,
-    summary: `${ctx.person.fullName} moved ${task.title} to ${next}`,
+    summary: `${ctx.person.fullName} moved ${task.title} to ${readableLabel(next)}`,
   });
   revalidateMany(["/tasks", `/tasks/${taskId}`, "/kanban", "/my-tasks"]);
 }
@@ -639,7 +639,7 @@ export async function moveContentStage(contentId: string, stage: string) {
     action: "content.stage",
     entityType: "content",
     entityId: contentId,
-    summary: `${ctx.person.fullName} moved content to ${stage}`,
+    summary: `${ctx.person.fullName} moved content to ${readableLabel(stage)}`,
   });
   await inferSkillsFromRecentWork([ctx.person.id, existing.ownerId ?? "", existing.creatorId ?? ""]);
   revalidateMany(["/content", `/content/${contentId}`, "/publishing", "/skills", "/profile"]);
@@ -673,7 +673,7 @@ export async function submitQc(form: FormData) {
     action: "content.qc",
     entityType: "content",
     entityId: contentId,
-    summary: `${ctx.person.fullName} recorded QC (${status})`,
+    summary: `${ctx.person.fullName} recorded QC (${readableLabel(status)})`,
   });
   await inferSkillsFromRecentWork([ctx.person.id]);
   revalidatePath(`/content/${contentId}/qc`);
@@ -864,8 +864,9 @@ export async function upsertKpiTarget(form: FormData) {
   }
   const periodId = String(form.get("periodId"));
   const targetValue = Number(form.get("targetValue"));
+  const category = String(form.get("category") || "content").trim().toLowerCase() || "content";
   const existing = await db.query.kpiTargets.findFirst({
-    where: and(eq(kpiTargets.personId, personId), eq(kpiTargets.periodId, periodId), eq(kpiTargets.category, String(form.get("category") || "content"))),
+    where: and(eq(kpiTargets.personId, personId), eq(kpiTargets.periodId, periodId), eq(kpiTargets.category, category)),
   });
   if (existing) {
     await db.insert(kpiHistory).values({
@@ -899,7 +900,7 @@ export async function upsertKpiTarget(form: FormData) {
       id: newId(),
       personId,
       periodId,
-      category: String(form.get("category") || "content"),
+      category,
       targetValue,
       unit: "count",
       createdById: ctx.person.id,
@@ -1208,7 +1209,7 @@ export async function createHandover(form: FormData) {
       kind: "task",
       relatedType: "task",
       relatedId: task.id,
-      summary: `${task.title} (${task.status.replaceAll("_", " ")})`,
+      summary: `${task.title} (${readableLabel(task.status)})`,
     });
   }
   if (parsed.pendingNote) {
@@ -1357,7 +1358,7 @@ export async function createAnnouncement(form: FormData) {
     action: "announcement.published",
     entityType: "announcement",
     entityId: id,
-    summary: `${ctx.person.fullName} posted a ${kind.replaceAll("_", " ")}`,
+    summary: `${ctx.person.fullName} posted ${readableLabel(kind)}.`,
   });
   revalidateMany(["/dashboard", "/notices"]);
 }

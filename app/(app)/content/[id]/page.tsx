@@ -7,7 +7,7 @@ import { moveContentStage } from "@/lib/actions/core";
 import { getContent } from "@/lib/queries";
 import { CONTENT_STAGES } from "@/lib/permissions";
 import { Badge, Button, Card, PageHeader, statusTone } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 
 export default async function ContentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -21,7 +21,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
   ]);
   return (
     <div>
-      <PageHeader module="content" title={content.title} description={`${content.pillar ?? "—"} · ${content.platform ?? "—"}`} />
+      <PageHeader module="content" title={content.title} description={`${content.pillar ? readableLabel(content.pillar) : "—"} · ${content.platform ? readableLabel(content.platform) : "—"}`} />
       <Card className="mb-4">
         <p className="text-sm">Current stage: <Badge tone={statusTone(content.stage)}>{content.stage}</Badge></p>
         <p className="mt-2 text-sm">{content.brief}</p>
@@ -53,7 +53,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
           <div className="kagum-list mt-2">
           {qc.map((q) => (
             <p key={q.id} className="text-sm">
-              {q.stage} — {q.status}
+              {readableLabel(q.stage)} — {readableLabel(q.status)}
             </p>
           ))}
           </div>
@@ -63,7 +63,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
           <div className="kagum-list mt-2">
           {pubs.map((p) => (
             <p key={p.id} className="text-sm">
-              {p.platform} {p.url}
+              {readableLabel(p.platform)} {p.url}
             </p>
           ))}
           </div>
@@ -79,7 +79,7 @@ export default async function ContentDetailPage({ params }: { params: Promise<{ 
           <div className="kagum-list mt-2">
           {approvals.map((a) => (
             <p key={a.id} className="text-sm">
-              {a.status}
+              {readableLabel(a.status)}
             </p>
           ))}
           </div>

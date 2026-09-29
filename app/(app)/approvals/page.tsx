@@ -2,8 +2,8 @@ import { decideExtension } from "@/lib/actions/core";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { allApprovals } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Card, EmptyState, Field, PageHeader, Select, Textarea, statusTone } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { Badge, Card, EmptyState, Field, PageHeader, RecordList, Select, Textarea, statusTone } from "@/components/ui";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function ApprovalsPage() {
@@ -29,10 +29,11 @@ export default async function ApprovalsPage() {
           body={canDecide ? "Requests requiring your decision will appear here." : "Pending requests will appear here. You cannot record a decision."}
         />
       ) : (
-        pending.map((a) => (
-          <Card key={a.id} className="mb-3">
+        <RecordList className="space-y-3">
+        {pending.map((a) => (
+          <Card key={a.id} data-record="" data-sort={a.createdAt ? new Date(a.createdAt).toISOString() : ""}>
             <p className="font-medium">
-              {a.type} <Badge tone={statusTone(a.status)}>{a.status}</Badge>
+              {readableLabel(a.type)} <Badge tone={statusTone(a.status)}>{a.status}</Badge>
             </p>
             <p className="text-sm text-secondary">{formatDateTime(a.createdAt)}</p>
             {canDecide && a.type === "task_extension" ? (
@@ -52,19 +53,22 @@ export default async function ApprovalsPage() {
               <p className="text-sm text-secondary">Awaiting executive or management decision.</p>
             )}
           </Card>
-        ))
+        ))}
+        </RecordList>
       )}
       <h2 className="mt-6 mb-2 font-medium">Status history</h2>
+      <RecordList>
       <div className="kagum-list">
       {rows
         .filter((r) => r.status !== "pending")
         .map((a) => (
-          <p key={a.id} className="text-sm">
-            {a.type} — {a.status}
+          <p key={a.id} data-record="" data-sort={a.createdAt ? new Date(a.createdAt).toISOString() : ""} className="text-sm">
+            {readableLabel(a.type)} — {readableLabel(a.status)}
             {a.comment ? ` · ${a.comment}` : ""}
           </p>
         ))}
       </div>
+      </RecordList>
     </div>
   );
 }

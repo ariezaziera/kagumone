@@ -2,8 +2,8 @@ import { createAnnouncement } from "@/lib/actions/core";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { listAnnouncements, listPeople } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
-import { Card, EmptyState, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { Card, EmptyState, Field, Input, PageHeader, RecordList, Select, Textarea } from "@/components/ui";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 import { redirect } from "next/navigation";
 
 export default async function NoticesPage() {
@@ -23,17 +23,19 @@ export default async function NoticesPage() {
           {rows.length === 0 ? (
             <EmptyState title="No notices yet" body="Posted event notices and participation requests will appear on the dashboard carousel." />
           ) : (
-            rows.map((n) => (
-              <Card key={n.id} className="mb-3">
-                <p className="text-xs uppercase text-info">{n.kind.replaceAll("_", " ")}</p>
+            <RecordList className="space-y-3">
+            {rows.map((n) => (
+              <Card key={n.id} data-record="" data-sort={n.createdAt ? new Date(n.createdAt).toISOString() : n.title}>
+                <p className="text-xs font-semibold text-info">{readableLabel(n.kind)}</p>
                 <p className="font-medium">{n.title}</p>
                 <p className="mt-1 whitespace-pre-wrap text-sm">{n.body}</p>
                 <p className="mt-2 text-xs text-secondary">
                   {peopleRows.find((p) => p.id === n.createdById)?.fullName} · {formatDateTime(n.createdAt)}
-                  {n.requiresParticipation ? " · needs participation" : ""}
+                  {n.requiresParticipation ? " · Needs participation" : ""}
                 </p>
               </Card>
-            ))
+            ))}
+            </RecordList>
           )}
         </div>
         {canPost ? (

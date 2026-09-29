@@ -3,7 +3,7 @@ import { createProject } from "@/lib/actions/core";
 import { listPeople, listProjects } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Badge, Card, EmptyState, Field, Input, PageHeader, Select, Table, Textarea, statusTone } from "@/components/ui";
-import { formatDate } from "@/lib/utils";
+import { formatDate, readableLabel } from "@/lib/utils";
 import { getAuthContext } from "@/lib/auth/context";
 import { redirect } from "next/navigation";
 
@@ -38,8 +38,10 @@ export default async function ProjectsPage() {
                   <td className="px-3 py-2">
                     <Badge tone={statusTone(p.status)}>{p.status}</Badge>
                   </td>
-                  <td className="px-3 py-2">{p.priority}</td>
-                  <td className="px-3 py-2 text-secondary">{formatDate(p.updatedAt)}</td>
+                  <td className="px-3 py-2">{readableLabel(p.priority)}</td>
+                  <td className="px-3 py-2 text-secondary" data-sort={p.updatedAt ? new Date(p.updatedAt).toISOString() : ""}>
+                    {formatDate(p.updatedAt)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -68,9 +70,9 @@ export default async function ProjectsPage() {
             </Field>
             <Field label="Priority">
               <Select name="priority" defaultValue="medium">
-                <option>low</option>
-                <option>medium</option>
-                <option>high</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
               </Select>
             </Field>
           </ActionForm>

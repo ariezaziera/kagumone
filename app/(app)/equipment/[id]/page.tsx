@@ -6,7 +6,7 @@ import { forceReturnEquipment, returnEquipment } from "@/lib/actions/core";
 import { getEquipment } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
 import { Card, Field, Input, PageHeader, Select, Textarea } from "@/components/ui";
-import { formatDateTime } from "@/lib/utils";
+import { formatDateTime, readableLabel } from "@/lib/utils";
 
 export default async function EquipmentDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -17,18 +17,18 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
   const photos = open ? await db.select().from(equipmentPhotos).where(eq(equipmentPhotos.loanId, open.id)) : [];
   return (
     <div>
-      <PageHeader module="equipment" title={item.name} description={`${item.assetCode} · ${item.serialNumber ?? "no serial"}`} />
+      <PageHeader module="equipment" title={item.name} description={`${item.assetCode} · ${item.serialNumber ?? "No serial"}`} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="space-y-1 text-sm">
-          <p>Category: {item.category}</p>
+          <p>Category: {item.category ? readableLabel(item.category) : "—"}</p>
           <p>Location: {item.location}</p>
-          <p>Condition: {item.condition}</p>
-          <p>Status hint: {item.statusHint}</p>
+          <p>Condition: {readableLabel(item.condition)}</p>
+          <p>Status hint: {readableLabel(item.statusHint)}</p>
           <h3 className="pt-2 font-medium">Loan history</h3>
           <div className="kagum-list">
           {loans.map((l) => (
             <p key={l.id}>
-              {l.status} {l.forceReturned ? "(force-returned, original borrower preserved)" : ""} — {formatDateTime(l.createdAt)}
+              {readableLabel(l.status)} {l.forceReturned ? "(force-returned, original borrower preserved)" : ""} — {formatDateTime(l.createdAt)}
             </p>
           ))}
           </div>
@@ -43,9 +43,9 @@ export default async function EquipmentDetailPage({ params }: { params: Promise<
                 <input type="hidden" name="afterPhotoCount" value="2" />
                 <Field label="Condition">
                   <Select name="condition" defaultValue="good">
-                    <option>good</option>
-                    <option>damaged</option>
-                    <option>missing</option>
+                    <option value="good">Good</option>
+                    <option value="damaged">Damaged</option>
+                    <option value="missing">Missing</option>
                   </Select>
                 </Field>
                 <Field label="Notes">
