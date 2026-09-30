@@ -122,7 +122,7 @@ export default async function MyTasksPage() {
           const lane = mine.filter((task) => task.status === status);
           const face = statusFace(status);
           return (
-            <section id={`lane-${status}`} className="scroll-mt-4 overflow-hidden rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
+            <section key={status} id={`lane-${status}`} className="scroll-mt-4 overflow-hidden rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
               <div className={`flex items-start justify-between gap-3 px-4 py-3 ${face.wash}`}>
                 <div>
                   <h2 className="text-base font-bold text-text">{readableLabel(status)}</h2>
