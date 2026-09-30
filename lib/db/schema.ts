@@ -838,6 +838,74 @@ export const aiConversations = sqliteTable("ai_conversations", {
   createdAt: ts("created_at"),
 });
 
+export const chatConversations = sqliteTable(
+  "chat_conversations",
+  {
+    id: id(),
+    kind: text("kind").notNull(),
+    pairKey: text("pair_key"),
+    title: text("title"),
+    createdById: text("created_by_id").references(() => people.id),
+    deletedAt: tsNull("deleted_at"),
+    createdAt: ts("created_at"),
+    updatedAt: ts("updated_at"),
+  },
+  (t) => [uniqueIndex("chat_conversations_pair_key_unique").on(t.pairKey)],
+);
+
+export const chatParticipants = sqliteTable(
+  "chat_participants",
+  {
+    id: id(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => chatConversations.id),
+    personId: text("person_id")
+      .notNull()
+      .references(() => people.id),
+    lastReadAt: tsNull("last_read_at"),
+    pinned: integer("pinned", { mode: "boolean" }).notNull().default(false),
+    hiddenAt: tsNull("hidden_at"),
+    leftAt: tsNull("left_at"),
+    createdAt: ts("created_at"),
+  },
+  (t) => [uniqueIndex("chat_participants_unique").on(t.conversationId, t.personId)],
+);
+
+export const chatMessages = sqliteTable(
+  "chat_messages",
+  {
+    id: id(),
+    conversationId: text("conversation_id")
+      .notNull()
+      .references(() => chatConversations.id),
+    authorId: text("author_id")
+      .notNull()
+      .references(() => people.id),
+    body: text("body").notNull(),
+    fileId: text("file_id").references(() => files.id),
+    deletedAt: tsNull("deleted_at"),
+    pinnedAt: tsNull("pinned_at"),
+    createdAt: ts("created_at"),
+  },
+  (t) => [index("chat_messages_conversation_idx").on(t.conversationId, t.createdAt)],
+);
+
+export const chatStars = sqliteTable(
+  "chat_stars",
+  {
+    id: id(),
+    messageId: text("message_id")
+      .notNull()
+      .references(() => chatMessages.id),
+    personId: text("person_id")
+      .notNull()
+      .references(() => people.id),
+    createdAt: ts("created_at"),
+  },
+  (t) => [uniqueIndex("chat_stars_unique").on(t.messageId, t.personId)],
+);
+
 export const aiMessages = sqliteTable("ai_messages", {
   id: id(),
   conversationId: text("conversation_id")
@@ -916,6 +984,10 @@ export const schema = {
   auditLogs,
   aiConversations,
   aiMessages,
+  chatConversations,
+  chatParticipants,
+  chatMessages,
+  chatStars,
 };
 
 export const peopleRelations = relations(people, ({ many, one }) => ({

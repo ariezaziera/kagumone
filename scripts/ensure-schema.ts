@@ -151,6 +151,84 @@ async function main() {
     )
   `);
 
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS chat_conversations (
+      id text PRIMARY KEY NOT NULL,
+      kind text NOT NULL,
+      pair_key text,
+      created_by_id text,
+      created_at integer NOT NULL,
+      updated_at integer NOT NULL,
+      FOREIGN KEY (created_by_id) REFERENCES people(id)
+    )
+  `);
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS chat_conversations_pair_key_unique ON chat_conversations(pair_key)");
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS chat_participants (
+      id text PRIMARY KEY NOT NULL,
+      conversation_id text NOT NULL,
+      person_id text NOT NULL,
+      last_read_at integer,
+      created_at integer NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id),
+      FOREIGN KEY (person_id) REFERENCES people(id)
+    )
+  `);
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS chat_participants_unique ON chat_participants(conversation_id, person_id)");
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS chat_messages (
+      id text PRIMARY KEY NOT NULL,
+      conversation_id text NOT NULL,
+      author_id text NOT NULL,
+      body text NOT NULL,
+      created_at integer NOT NULL,
+      FOREIGN KEY (conversation_id) REFERENCES chat_conversations(id),
+      FOREIGN KEY (author_id) REFERENCES people(id)
+    )
+  `);
+  await client.execute("CREATE INDEX IF NOT EXISTS chat_messages_conversation_idx ON chat_messages(conversation_id, created_at)");
+  const chatColumns: Record<string, { name: string; sql: string }[]> = {
+    chat_conversations: [
+      { name: "title", sql: "ALTER TABLE chat_conversations ADD COLUMN title text" },
+      { name: "deleted_at", sql: "ALTER TABLE chat_conversations ADD COLUMN deleted_at integer" },
+    ],
+    chat_participants: [
+      { name: "pinned", sql: "ALTER TABLE chat_participants ADD COLUMN pinned integer DEFAULT 0 NOT NULL" },
+      { name: "hidden_at", sql: "ALTER TABLE chat_participants ADD COLUMN hidden_at integer" },
+      { name: "left_at", sql: "ALTER TABLE chat_participants ADD COLUMN left_at integer" },
+    ],
+    chat_messages: [
+      { name: "file_id", sql: "ALTER TABLE chat_messages ADD COLUMN file_id text" },
+      { name: "deleted_at", sql: "ALTER TABLE chat_messages ADD COLUMN deleted_at integer" },
+      { name: "pinned_at", sql: "ALTER TABLE chat_messages ADD COLUMN pinned_at integer" },
+    ],
+  };
+  for (const [table, columns] of Object.entries(chatColumns)) {
+    const info = await client.execute(`PRAGMA table_info(${table})`);
+    const have = new Set(info.rows.map((row) => String(row.name)));
+    for (const column of columns) {
+      if (have.has(column.name)) continue;
+      try {
+        await client.execute(column.sql);
+        console.log("Added", table + "." + column.name);
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        if (!message.includes("duplicate column")) throw error;
+      }
+    }
+  }
+  await client.execute(`
+    CREATE TABLE IF NOT EXISTS chat_stars (
+      id text PRIMARY KEY NOT NULL,
+      message_id text NOT NULL,
+      person_id text NOT NULL,
+      created_at integer NOT NULL,
+      FOREIGN KEY (message_id) REFERENCES chat_messages(id),
+      FOREIGN KEY (person_id) REFERENCES people(id)
+    )
+  `);
+  await client.execute("CREATE UNIQUE INDEX IF NOT EXISTS chat_stars_unique ON chat_stars(message_id, person_id)");
+
   const tasks = await client.execute("PRAGMA table_info(tasks)");
   console.log(
     "tasks columns:",

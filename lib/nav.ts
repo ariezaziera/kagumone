@@ -48,6 +48,7 @@ export const NAV_GROUPS: NavGroup[] = [
     collapsible: true,
     items: [
       { href: "/notices", label: "Notices" },
+      { href: "/chats", label: "Chats" },
       { href: "/equipment", label: "Equipment" },
     ],
   },
