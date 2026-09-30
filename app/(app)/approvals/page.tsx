@@ -26,7 +26,10 @@ export default async function ApprovalsPage({ searchParams }: { searchParams: Pr
   if (!ctx) redirect("/login");
   const { view = "pending" } = await searchParams;
   const canDecide = hasPermission(ctx, "task:approve_extension");
-  const [rows, peopleRows] = await Promise.all([allApprovals(), listPeople()]);
+  const [approvalRows, peopleRows] = await Promise.all([allApprovals(), listPeople()]);
+  const rows = canDecide
+    ? approvalRows
+    : approvalRows.filter((row) => row.requesterId === ctx.person.id || row.reviewerId === ctx.person.id);
   const peopleById = new Map(peopleRows.map((person) => [person.id, person]));
   const extensionIds = rows.filter((row) => row.type === "task_extension").map((row) => row.relatedId);
   const extensions = extensionIds.length > 0 ? await db.select().from(taskExtensions).where(inArray(taskExtensions.id, extensionIds)) : [];

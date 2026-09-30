@@ -18,6 +18,14 @@ import {
 } from "@/lib/services/chats";
 import { DISPLAY_TZ } from "@/lib/utils";
 
+const idSchema = z.string().uuid();
+
+function parseId(value: unknown, message: string) {
+  const parsed = idSchema.safeParse(String(value || ""));
+  if (!parsed.success) throw new Error(message);
+  return parsed.data;
+}
+
 function refreshChats() {
   revalidatePath("/chats");
 }
@@ -33,18 +41,15 @@ function chatTime(value: Date) {
 }
 
 export async function sendChatMessage(form: FormData) {
-  const conversationId = String(form.get("conversationId") || "");
+  const conversationId = parseId(form.get("conversationId"), "That conversation is not available.");
   const body = String(form.get("body") || "");
   const file = form.get("file");
-  const parsed = z.object({ conversationId: z.string().min(1) }).safeParse({ conversationId });
-  if (!parsed.success) throw new Error("That conversation is not available.");
-  await postChatMessage(parsed.data.conversationId, body, file instanceof File && file.size > 0 ? file : null);
+  await postChatMessage(conversationId, body, file instanceof File && file.size > 0 ? file : null);
   refreshChats();
 }
 
 export async function openDirectChat(form: FormData) {
-  const personId = String(form.get("personId") || "").trim();
-  if (!personId) throw new Error("Choose a teammate.");
+  const personId = parseId(form.get("personId"), "Choose a teammate.");
   const id = await openDirectConversation(personId);
   refreshChats();
   redirect(`/chats?c=${id}`);
@@ -52,48 +57,53 @@ export async function openDirectChat(form: FormData) {
 
 export async function createGroupChat(form: FormData) {
   const name = String(form.get("name") || "");
-  const memberIds = form.getAll("memberIds").map((value) => String(value));
+  const memberIds = form.getAll("memberIds").map((value) => parseId(value, "Choose teammates who can join a chat."));
   const id = await createGroupConversation(name, memberIds);
   refreshChats();
   redirect(`/chats?c=${id}`);
 }
 
 export async function addGroupChatMember(form: FormData) {
-  const conversationId = String(form.get("conversationId") || "");
-  const personId = String(form.get("personId") || "");
-  if (!personId) throw new Error("Choose a teammate.");
+  const conversationId = parseId(form.get("conversationId"), "That conversation is not available.");
+  const personId = parseId(form.get("personId"), "Choose a teammate.");
   await addGroupMember(conversationId, personId);
   refreshChats();
 }
 
 export async function pinChat(conversationId: string, pinned: boolean) {
-  await setChatPinned(conversationId, pinned);
+  await setChatPinned(parseId(conversationId, "That conversation is not available."), pinned === true);
   refreshChats();
 }
 
 export async function pinChatMessage(conversationId: string, messageId: string, pinned: boolean) {
-  await setMessagePinned(conversationId, messageId, pinned);
+  await setMessagePinned(
+    parseId(conversationId, "That conversation is not available."),
+    parseId(messageId, "That message is not available."),
+    pinned === true,
+  );
   refreshChats();
 }
 
 export async function starChatMessage(messageId: string, starred: boolean) {
-  await setMessageStarred(messageId, starred);
+  await setMessageStarred(parseId(messageId, "That message is not available."), starred === true);
   refreshChats();
 }
 
 export async function removeChatMessage(messageId: string) {
-  await deleteChatMessage(messageId);
+  await deleteChatMessage(parseId(messageId, "That message is not available."));
   refreshChats();
 }
 
 export async function removeChat(conversationId: string) {
-  await closeConversation(conversationId);
+  await closeConversation(parseId(conversationId, "That conversation is not available."));
   refreshChats();
   redirect("/chats");
 }
 
 export async function pollChat(conversationId: string) {
-  if (!conversationId) return null;
+  const parsed = idSchema.safeParse(conversationId);
+  if (!parsed.success) return null;
+  conversationId = parsed.data;
   await markConversationRead(conversationId);
   const page = await loadChatPage(conversationId);
   if (!page.thread) return null;

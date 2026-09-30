@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import { Bell, Trash2 } from "lucide-react";
 import { clearNotifications, markNotificationRead, markNotificationsRead, previewNotifications } from "@/lib/actions/notifications";
 import type { NotificationPreview } from "@/lib/queries";
+import { ConfirmAction } from "@/components/confirm-action";
 import { buttonClass, iconButtonClass } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -129,7 +130,6 @@ export function NotificationBell({
 
   async function clearAll() {
     if (pending || preview.items.length === 0) return;
-    if (!window.confirm("Clear all notifications?")) return;
     setPending(true);
     try {
       setPreview(await clearNotifications());
@@ -173,9 +173,15 @@ export function NotificationBell({
                   </button>
                 ) : null}
                 {preview.items.length > 0 ? (
-                  <button type="button" className={iconButtonClass("p-1.5 text-secondary hover:text-error disabled:opacity-50")} aria-label="Clear all notifications" disabled={pending} onClick={() => void clearAll()}>
+                  <ConfirmAction
+                    label="Clear all notifications"
+                    prompt="Clear all notifications?"
+                    className={iconButtonClass("p-1.5 text-secondary hover:text-error disabled:opacity-50")}
+                    disabled={pending}
+                    onConfirm={() => void clearAll()}
+                  >
                     <Trash2 size={16} />
-                  </button>
+                  </ConfirmAction>
                 ) : null}
               </div>
             </div>

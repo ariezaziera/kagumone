@@ -1,9 +1,13 @@
 import { and, count, desc, eq, isNull, ne } from "drizzle-orm";
+import { getAuthContext } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import {
   activityLogs,
   announcements,
   approvals,
+  chatConversations,
+  chatMessages,
+  chatParticipants,
   contents,
   equipment,
   equipmentLoans,
@@ -21,6 +25,7 @@ import {
   timeEntries,
 } from "@/lib/db/schema";
 import { isTaskOverdue } from "@/lib/permissions";
+import { unreadChatCount } from "@/lib/services/chats";
 import { formatDateTime } from "@/lib/utils";
 import { demoPersonIds, hideDemoWorkspace, isSeedEquipment, onlyDemoPeople } from "@/lib/services/demo-scope";
 
@@ -67,6 +72,36 @@ export async function listContents() {
   const demoIds = await demoGate();
   if (!demoIds) return rows;
   return rows.filter((row) => !onlyDemoPeople([row.ownerId, row.creatorId], demoIds));
+}
+
+function sameKualaLumpurDay(value: Date | string | null | undefined, now = new Date()) {
+  if (!value) return false;
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) return false;
+  const fmt = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Kuala_Lumpur" });
+  return fmt.format(date) === fmt.format(now);
+}
+
+export async function navAttention(personId: string, canDecideApprovals: boolean) {
+  const [tasks, loans, approvals, chats] = await Promise.all([
+    listTasks(),
+    openLoans(),
+    canDecideApprovals ? pendingApprovals() : Promise.resolve([]),
+    unreadChatCount(),
+  ]);
+  const mine = tasks.filter((task) => task.assigneeId === personId && task.status !== "completed");
+  const waiting = mine.filter((task) => task.status === "pending_acknowledgement" || isTaskOverdue(task));
+  const dueToday = mine.filter((task) => sameKualaLumpurDay(task.officialDeadline));
+  const overdueLoans = loans.filter(
+    (loan) => loan.borrowerId === personId && loan.expectedReturnAt != null && loan.expectedReturnAt.getTime() < Date.now(),
+  );
+  return {
+    "/my-tasks": waiting.length,
+    "/calendar": dueToday.length,
+    "/chats": chats,
+    "/approvals": approvals.length,
+    "/equipment": overdueLoans.length,
+  };
 }
 
 export async function dashboardData(personId: string) {
@@ -180,11 +215,44 @@ export async function listKpi() {
   return { periods: periods.filter((period) => periodIds.has(period.id)), targets: visibleTargets };
 }
 
+function isChatFile(row: { relatedType: string | null; category: string | null }) {
+  return row.relatedType === "chat" || row.category === "chat";
+}
+
 export async function listFiles() {
-  const rows = await db.select().from(files).orderBy(desc(files.createdAt));
+  const rows = (await db.select().from(files).orderBy(desc(files.createdAt))).filter((row) => !isChatFile(row));
   const demoIds = await demoGate();
   if (!demoIds) return rows;
   return rows.filter((row) => !row.uploaderId || !demoIds.has(row.uploaderId));
+}
+
+export async function readableFile(id: string) {
+  const ctx = await getAuthContext();
+  if (!ctx || ctx.person.organizationalStatus === "deleted") return null;
+  const [file] = await db.select().from(files).where(eq(files.id, id)).limit(1);
+  if (!file) return null;
+  const demoIds = await demoGate();
+  if (demoIds && file.uploaderId && demoIds.has(file.uploaderId)) return null;
+  if (!isChatFile(file)) return file;
+  if (!file.relatedId) return null;
+  const [message] = await db.select().from(chatMessages).where(eq(chatMessages.id, file.relatedId)).limit(1);
+  if (!message || message.deletedAt) return null;
+  const [conversation] = await db.select().from(chatConversations).where(eq(chatConversations.id, message.conversationId)).limit(1);
+  if (!conversation || conversation.deletedAt) return null;
+  const members = await db.select().from(chatParticipants).where(eq(chatParticipants.conversationId, conversation.id));
+  const mine = members.find((member) => member.personId === ctx.person.id) ?? null;
+  if (conversation.kind === "direct") {
+    if (!mine) return null;
+    const otherId = members.find((member) => member.personId !== ctx.person.id)?.personId;
+    if (demoIds && otherId && demoIds.has(otherId)) return null;
+    return file;
+  }
+  if (conversation.kind === "group") {
+    if (!mine || mine.leftAt) return null;
+    return file;
+  }
+  if (conversation.kind === "team") return file;
+  return null;
 }
 
 export async function listHandovers() {

@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ClipboardList, ScrollText, Users } from "lucide-react";
+import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { listActivity, listAudit, listPeople } from "@/lib/queries";
 import { historyHref } from "@/components/record-files";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -54,16 +56,25 @@ function actionLabel(action: string) {
 }
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
+  const ctx = await getAuthContext();
+  if (!ctx) redirect("/login");
+  const canAudit = hasPermission(ctx, "administration:manage");
   const { view = "activity" } = await searchParams;
-  const [activity, audit, peopleRows] = await Promise.all([listActivity(100), listAudit(50), listPeople()]);
+  const [activity, audit, peopleRows] = await Promise.all([
+    listActivity(100),
+    canAudit ? listAudit(50) : Promise.resolve([]),
+    listPeople(),
+  ]);
   const peopleById = new Map(peopleRows.map((person) => [person.id, person]));
   const named = new Set(
     [...activity.map((row) => row.actorId), ...audit.map((row) => row.actorId)].filter((id): id is string => Boolean(id && peopleById.has(id))),
   );
-  const showingAudit = view === "audit";
+  const showingAudit = canAudit && view === "audit";
   const summary = activity.length === 0 && audit.length === 0
     ? "Activity is the readable story. Audit is the system trace of what changed."
-    : `${activity.length} recent activity lines, ${audit.length} recent audit lines.`;
+    : canAudit
+      ? `${activity.length} recent activity lines, ${audit.length} recent audit lines.`
+      : `${activity.length} recent activity lines.`;
 
   return (
     <div className="space-y-5">
@@ -80,17 +91,19 @@ export default async function ActivityPage({ searchParams }: { searchParams: Pro
           </>
         }
       />
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+      <div className={`grid grid-cols-2 gap-3 ${canAudit ? "xl:grid-cols-3" : ""}`}>
         <Metric label="Activity" value={activity.length} note="Latest readable lines, up to 100." icon={ClipboardList} wash="bg-blue-soft" ink="text-info" href="/activity?view=activity" />
-        <Metric label="Audit" value={audit.length} note="Latest system traces, up to 50." icon={ScrollText} wash="bg-charcoal-soft" ink="text-charcoal" href="/activity?view=audit" />
+        {canAudit ? <Metric label="Audit" value={audit.length} note="Latest system traces, up to 50." icon={ScrollText} wash="bg-charcoal-soft" ink="text-charcoal" href="/activity?view=audit" /> : null}
         <Metric label="People" value={named.size} note="People named on these recent lines." icon={Users} wash="bg-pink-soft" ink="text-pink" />
       </div>
-      <ViewPills
-        items={[
-          { key: "activity", href: "/activity?view=activity", label: "Activity", active: !showingAudit, count: activity.length },
-          { key: "audit", href: "/activity?view=audit", label: "Audit", active: showingAudit, count: audit.length },
-        ]}
-      />
+      {canAudit ? (
+        <ViewPills
+          items={[
+            { key: "activity", href: "/activity?view=activity", label: "Activity", active: !showingAudit, count: activity.length },
+            { key: "audit", href: "/activity?view=audit", label: "Audit", active: showingAudit, count: audit.length },
+          ]}
+        />
+      ) : null}
       {showingAudit ? (
         audit.length === 0 ? (
           <EmptyState illustration="search" title="No audit lines yet" body="A system trace appears when a stored value changes." />

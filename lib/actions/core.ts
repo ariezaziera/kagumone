@@ -660,16 +660,37 @@ export async function moveContentStage(contentId: string, stage: string) {
 export async function submitQc(form: FormData) {
   const ctx = await getAuthContext();
   if (!ctx) throw new Error("You must be signed in.");
-  const contentId = String(form.get("contentId"));
-  const stage = String(form.get("stage"));
-  const status = String(form.get("status"));
-  const comments = String(form.get("comments") || "");
+  const parsed = z.object({
+    contentId: z.string().uuid(),
+    stage: z.enum(["self_qc", "qc1", "qc2"]),
+    status: z.enum(["passed", "corrections"]),
+    checklist: z.string().max(4000),
+    comments: z.string().max(4000),
+  }).parse({
+    contentId: form.get("contentId"),
+    stage: form.get("stage"),
+    status: form.get("status"),
+    checklist: String(form.get("checklist") || ""),
+    comments: String(form.get("comments") || ""),
+  });
+  const stagePermission = {
+    self_qc: "content:self_qc",
+    qc1: "content:qc1",
+    qc2: "content:qc2",
+  } as const;
+  requirePermission(ctx, stagePermission[parsed.stage]);
+  const existing = await db.query.contents.findFirst({ where: eq(contents.id, parsed.contentId) });
+  if (!existing) throw new Error("Content not found.");
+  const contentId = parsed.contentId;
+  const stage = parsed.stage;
+  const status = parsed.status;
+  const comments = parsed.comments;
   await db.insert(contentQc).values({
     id: newId(),
     contentId,
     stage,
     reviewerId: ctx.person.id,
-    checklist: String(form.get("checklist") || ""),
+    checklist: parsed.checklist,
     comments,
     status,
     createdAt: now(),
@@ -1740,8 +1761,9 @@ export async function logPlannedWork(form: FormData) {
   const endAt = parseDate(`${parsed.date}T${parsed.endTime}`);
   if (!startAt || !endAt) throw new Error("Planned start and end times are required.");
   if (endAt <= startAt) throw new Error("Planned end must be after start.");
+  const id = newId();
   await db.insert(plannedWork).values({
-    id: newId(),
+    id,
     personId: ctx.person.id,
     title: parsed.title,
     workType: parsed.workType,
@@ -1752,6 +1774,13 @@ export async function logPlannedWork(form: FormData) {
     endAt,
     notes: parsed.notes || "",
     createdAt: now(),
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "planned_work.logged",
+    entityType: "planned_work",
+    entityId: id,
+    summary: `${ctx.person.fullName} planned ${parsed.title}.`,
   });
   revalidatePath("/calendar");
 }
@@ -1789,6 +1818,13 @@ export async function updatePlannedWork(form: FormData) {
       notes: parsed.notes || existing.notes,
     })
     .where(eq(plannedWork.id, id));
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "planned_work.updated",
+    entityType: "planned_work",
+    entityId: id,
+    summary: `${ctx.person.fullName} updated planned work ${parsed.title}.`,
+  });
   revalidatePath("/calendar");
 }
 

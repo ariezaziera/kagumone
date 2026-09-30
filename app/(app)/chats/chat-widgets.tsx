@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   addGroupChatMember,
@@ -14,6 +15,7 @@ import {
   sendChatMessage,
   starChatMessage,
 } from "@/lib/actions/chats";
+import { ConfirmAction } from "@/components/confirm-action";
 import { Button, EmptyState, Input, Select, Textarea, buttonClass } from "@/components/ui";
 import { cn } from "@/lib/utils";
 
@@ -175,16 +177,14 @@ export function ChatThread({
                     {message.starred ? "Unstar" : "Star"}
                   </button>
                   {message.canDelete ? (
-                    <button
-                      type="button"
+                    <ConfirmAction
+                      label="Delete message"
+                      prompt="Delete this message for everyone?"
                       className={messageActionClass(false, true)}
-                      onClick={() => {
-                        if (!window.confirm("Delete this message for everyone?")) return;
-                        void run(() => removeChatMessage(message.id));
-                      }}
+                      onConfirm={() => void run(() => removeChatMessage(message.id))}
                     >
                       Delete
-                    </button>
+                    </ConfirmAction>
                   ) : null}
                 </div>
               )}
@@ -298,12 +298,11 @@ export function ChatHeaderActions({
         {pinned ? "Unpin chat" : "Pin chat"}
       </Button>
       {closeLabel ? (
-        <Button
-          type="button"
-          variant="danger"
-          className="px-2.5 py-1.5 text-xs"
-          onClick={() => {
-            if (!window.confirm(`${closeLabel}?`)) return;
+        <ConfirmAction
+          label={closeLabel}
+          prompt={`${closeLabel}?`}
+          className={buttonClass("danger", "px-2.5 py-1.5 text-xs")}
+          onConfirm={() => {
             void removeChat(conversationId).catch((err) => {
               if (isNavigationError(err)) throw err;
               setError(err instanceof Error ? err.message : "Unable to update this chat.");
@@ -311,7 +310,7 @@ export function ChatHeaderActions({
           }}
         >
           {closeLabel}
-        </Button>
+        </ConfirmAction>
       ) : null}
       {error ? <p className="w-full text-right text-xs text-error">{error}</p> : null}
     </div>
@@ -323,7 +322,7 @@ export function AddMember({ conversationId, people }: { conversationId: string; 
   if (people.length === 0) return null;
   return (
     <form
-      className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2"
+      className="flex flex-wrap items-center gap-2 border-t border-border px-3 py-3"
       action={async (form) => {
         setError(null);
         try {
@@ -349,6 +348,46 @@ export function AddMember({ conversationId, people }: { conversationId: string; 
       </Button>
       {error ? <p className="text-sm text-error">{error}</p> : null}
     </form>
+  );
+}
+
+export function GroupMembers({
+  conversationId,
+  members,
+  people,
+  canManage,
+}: {
+  conversationId: string;
+  members: { id: string; name: string; you: boolean; owner: boolean }[];
+  people: { id: string; name: string }[];
+  canManage: boolean;
+}) {
+  return (
+    <aside className="flex h-full min-h-0 w-full flex-col overflow-hidden rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
+      <div className="flex items-start justify-between gap-2 border-b border-border px-3 py-3">
+        <div>
+          <h2 className="text-sm font-bold text-text">Members</h2>
+          <p className="text-xs text-secondary">{members.length} {members.length === 1 ? "person" : "people"}</p>
+        </div>
+        <Link className={cn(buttonClass("ghost", "px-2.5 py-1.5 text-xs"), "lg:hidden")} href={`/chats?c=${conversationId}`}>
+          Messages
+        </Link>
+      </div>
+      <ul className="min-h-0 flex-1 overflow-y-auto py-1">
+        {members.map((member) => (
+          <li key={member.id} className="flex items-center gap-2 px-3 py-2">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-charcoal text-xs font-bold text-white">
+              {member.name.trim().charAt(0).toUpperCase() || "?"}
+            </span>
+            <span className="min-w-0">
+              <span className="block truncate text-sm font-semibold text-text">{member.you ? `${member.name} (you)` : member.name}</span>
+              {member.owner ? <span className="block text-[11px] text-muted">Created this group</span> : null}
+            </span>
+          </li>
+        ))}
+      </ul>
+      {canManage ? <AddMember conversationId={conversationId} people={people} /> : null}
+    </aside>
   );
 }
 

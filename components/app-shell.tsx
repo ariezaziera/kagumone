@@ -25,6 +25,7 @@ import {
   ListChecks,
   Megaphone,
   Menu,
+  MessageCircle,
   Plus,
   Send,
   Settings,
@@ -54,6 +55,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/publishing": Send,
   "/files": Files,
   "/notices": Megaphone,
+  "/chats": MessageCircle,
   "/equipment": Camera,
   "/kpi": Gauge,
   "/reports": FileText,
@@ -75,17 +77,38 @@ const MOBILE_ICONS: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
   "/my-tasks": ListChecks,
   "/calendar": CalendarDays,
+  "/chats": MessageCircle,
   "/notifications": Bell,
 };
+
+function countLabel(count: number) {
+  return count > 99 ? "99+" : String(count);
+}
+
+function CountBadge({ count, overlay = false }: { count: number; overlay?: boolean }) {
+  if (count <= 0) return null;
+  return (
+    <span
+      className={cn(
+        "flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[9px] font-bold leading-none text-white ring-2 ring-surface",
+        overlay ? "absolute -right-1.5 -top-1.5" : "ml-auto shrink-0",
+      )}
+    >
+      {countLabel(count)}
+    </span>
+  );
+}
 
 function SidebarGroup({
   group,
   pathname,
   can,
+  counts,
 }: {
   group: NavGroup;
   pathname: string;
   can: (perm?: string) => boolean;
+  counts: Record<string, number>;
 }) {
   const items = group.items.filter((item) => can(item.permission));
   const active = items.some((item) => navItemIsActive(pathname, item.href));
@@ -97,26 +120,37 @@ function SidebarGroup({
 
   if (items.length === 0) return null;
 
+  const waiting = items.reduce((sum, item) => sum + (counts[item.href] ?? 0), 0);
   const linkClass = (href: string) =>
     cn(
       "flex items-center gap-2 rounded-[12px] px-2 py-1.5 text-sm transition-colors",
       navItemIsActive(pathname, href) ? "bg-primary-light font-semibold text-primary" : "text-secondary hover:bg-canvas active:bg-charcoal-soft",
     );
 
+  function itemLink(item: NavGroup["items"][number], iconWrap: boolean) {
+    const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
+    const count = counts[item.href] ?? 0;
+    return (
+      <Link href={item.href} className={cn(linkClass(item.href), iconWrap && "pl-2")} title={count > 0 ? `${item.label}, ${countLabel(count)} waiting` : item.label}>
+        {iconWrap ? (
+          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-canvas text-charcoal">
+            <Icon size={14} aria-hidden />
+          </span>
+        ) : (
+          <Icon size={16} aria-hidden />
+        )}
+        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+        <CountBadge count={count} />
+      </Link>
+    );
+  }
+
   if (group.collapsible === false) {
     return (
       <ul className="space-y-0.5">
-        {items.map((item) => {
-          const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
-          return (
-            <li key={item.href}>
-              <Link href={item.href} className={linkClass(item.href)} title={item.label}>
-                <Icon size={16} aria-hidden />
-                {item.label}
-              </Link>
-            </li>
-          );
-        })}
+        {items.map((item) => (
+          <li key={item.href}>{itemLink(item, false)}</li>
+        ))}
       </ul>
     );
   }
@@ -134,24 +168,17 @@ function SidebarGroup({
         aria-controls={panelId}
         onClick={() => setOpen((value) => !value)}
       >
-        {group.label}
-        <ChevronDown size={14} className={cn("transition-transform", open ? "rotate-0" : "-rotate-90")} />
+        <span className="min-w-0 truncate">{group.label}</span>
+        <span className="flex items-center gap-1">
+          {!open ? <CountBadge count={waiting} /> : null}
+          <ChevronDown size={14} className={cn("transition-transform", open ? "rotate-0" : "-rotate-90")} />
+        </span>
       </button>
       {open ? (
         <ul id={panelId} className="mt-0.5 space-y-0.5">
-          {items.map((item) => {
-            const Icon = NAV_ICONS[item.href] ?? LayoutDashboard;
-            return (
-              <li key={item.href}>
-                <Link href={item.href} className={cn(linkClass(item.href), "pl-2")}>
-                  <span className="flex h-6 w-6 items-center justify-center rounded-md bg-canvas text-charcoal">
-                    <Icon size={14} aria-hidden />
-                  </span>
-                  {item.label}
-                </Link>
-              </li>
-            );
-          })}
+          {items.map((item) => (
+            <li key={item.href}>{itemLink(item, true)}</li>
+          ))}
         </ul>
       ) : null}
     </div>
@@ -161,6 +188,7 @@ function SidebarGroup({
 export function AppShell({
   children,
   notices,
+  attention,
   personName,
   personId,
   hasPhoto,
@@ -170,6 +198,7 @@ export function AppShell({
 }: {
   children: React.ReactNode;
   notices: NotificationPreview;
+  attention: Record<string, number>;
   personName: string;
   personId: string;
   hasPhoto: boolean;
@@ -179,8 +208,15 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [unread, setUnread] = useState(notices.unread);
-  const reportUnread = useCallback((value: number) => setUnread(value), []);
+  const [counts, setCounts] = useState(attention);
+  const attentionKey = Object.entries(attention).map(([href, count]) => `${href}:${count}`).join("|");
+  const reportUnread = useCallback((value: number) => {
+    setCounts((current) => ({ ...current, "/notifications": value }));
+  }, []);
+
+  useEffect(() => {
+    setCounts(attention);
+  }, [attentionKey, attention]);
   const can = (perm?: string) => !perm || permissions.includes(perm);
   const avatar = (key: string) => (
     <PersonAvatar key={key} personId={personId} name={personName} hasPhoto={hasPhoto} version={photoVersion} size="sm" />
@@ -231,7 +267,7 @@ export function AppShell({
           </div>
           <nav className="flex-1 space-y-3 overflow-y-auto px-3 pb-4">
             {NAV_GROUPS.map((group) => (
-              <SidebarGroup key={group.id} group={group} pathname={pathname} can={can} />
+              <SidebarGroup key={group.id} group={group} pathname={pathname} can={can} counts={counts} />
             ))}
           </nav>
           <div className="border-t border-border p-3 lg:hidden">
@@ -246,8 +282,12 @@ export function AppShell({
         </aside>
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           <header className="z-20 flex shrink-0 items-center gap-2 border-b border-border bg-surface px-3 py-2.5 sm:gap-3 sm:px-4 sm:py-3">
-            <button className={iconButtonClass("p-1.5 lg:hidden")} onClick={() => setOpen(true)} aria-label="Open menu">
+            <button className={cn(iconButtonClass("relative p-1.5 lg:hidden"))} onClick={() => setOpen(true)} aria-label="Open menu">
               <Menu size={18} />
+              <CountBadge
+                overlay
+                count={Object.entries(counts).reduce((sum, [href, count]) => sum + (MOBILE_NAV.some((item) => item.href === href) ? 0 : count), 0)}
+              />
             </button>
             <Link href="/dashboard" className="flex min-w-0 items-center gap-2 lg:hidden">
               <Image src="/kagum-mark.png" alt="" width={32} height={32} className="h-8 w-8 shrink-0 object-contain" />
@@ -276,17 +316,19 @@ export function AppShell({
             </Button>
             </div>
           </header>
-          <main className="min-h-0 flex-1 overflow-y-auto px-4 py-5 pb-28 lg:px-8 lg:py-6 lg:pb-6">{children}</main>
+          <main className="flex min-h-0 flex-1 flex-col overflow-y-auto px-4 py-5 pb-28 lg:px-8 lg:py-6 lg:pb-6">{children}</main>
         </div>
       </div>
-      <nav className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-border bg-surface pb-[max(0.35rem,env(safe-area-inset-bottom))] lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-20 grid border-t border-border bg-surface pb-[max(0.35rem,env(safe-area-inset-bottom))] lg:hidden" style={{ gridTemplateColumns: `repeat(${MOBILE_NAV.length}, minmax(0, 1fr))` }}>
         {MOBILE_NAV.map((item) => {
           const Icon = MOBILE_ICONS[item.href] ?? Menu;
           const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
+          const count = counts[item.href] ?? 0;
           return (
             <Link
               key={item.href}
               href={item.href}
+              aria-label={count > 0 ? `${item.label}, ${countLabel(count)} waiting` : item.label}
               className={cn(
                 "group flex flex-col items-center gap-0.5 px-1 py-1.5 text-center text-[10px] font-medium leading-snug transition-colors",
                 active ? "text-primary" : "text-secondary hover:text-text",
@@ -299,7 +341,7 @@ export function AppShell({
                 )}
               >
                 <Icon size={18} aria-hidden />
-                {item.href === "/notifications" && unread > 0 ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" aria-hidden /> : null}
+                <CountBadge overlay count={count} />
               </span>
               {item.label}
             </Link>

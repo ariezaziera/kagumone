@@ -4,6 +4,8 @@ This is the operational system for KAGUM Advance Group. Master product rules are
 
 Inspect schema, services, and existing pages before adding tables or duplicating logic.
 
+There is no time tracking page. Chats, the notification bell, and notification preferences are implemented. Read `SYSTEM_ARCHITECTURE.md` before adding a route or a write path.
+
 Shared write path: session → permission → Zod → business rule → mutation → `recordActivity` / `recordAudit` / `notify`.
 
 Do not hardcode organizational people. Do not treat role name as permission. Do not invent metrics.

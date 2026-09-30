@@ -59,7 +59,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { href: "/kpi", label: "KPI", permission: "kpi:view" },
       { href: "/reports", label: "Reports", permission: "reports:view" },
-      { href: "/workload", label: "Workload" },
+      { href: "/workload", label: "Workload", permission: "reports:view" },
     ],
   },
   {
@@ -100,6 +100,7 @@ export const MOBILE_NAV = [
   { href: "/dashboard", label: "Dashboard" },
   { href: "/my-tasks", label: "Tasks" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/chats", label: "Chats" },
   { href: "/notifications", label: "Notifications" },
 ];
 

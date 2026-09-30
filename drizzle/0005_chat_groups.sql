@@ -1,19 +1,3 @@
-ALTER TABLE `chat_conversations` ADD `title` text;
---> statement-breakpoint
-ALTER TABLE `chat_conversations` ADD `deleted_at` integer;
---> statement-breakpoint
-ALTER TABLE `chat_participants` ADD `pinned` integer DEFAULT 0 NOT NULL;
---> statement-breakpoint
-ALTER TABLE `chat_participants` ADD `hidden_at` integer;
---> statement-breakpoint
-ALTER TABLE `chat_participants` ADD `left_at` integer;
---> statement-breakpoint
-ALTER TABLE `chat_messages` ADD `file_id` text;
---> statement-breakpoint
-ALTER TABLE `chat_messages` ADD `deleted_at` integer;
---> statement-breakpoint
-ALTER TABLE `chat_messages` ADD `pinned_at` integer;
---> statement-breakpoint
 CREATE TABLE IF NOT EXISTS `chat_stars` (
 	`id` text PRIMARY KEY NOT NULL,
 	`message_id` text NOT NULL,

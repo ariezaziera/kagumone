@@ -1,14 +1,15 @@
-"use client";
-
-import { useState } from "react";
 import Link from "next/link";
-import { authClient } from "@/lib/auth/client";
-import { PasswordInput } from "@/components/password-input";
-import { Button, Card, Field } from "@/components/ui";
+import { redirect } from "next/navigation";
+import { notificationChoices, saveNotificationPreferences } from "@/lib/actions/notifications";
+import { getAuthContext } from "@/lib/auth/context";
+import { Button, Card } from "@/components/ui";
 import { WorkHero, linkButton } from "@/components/work-surface";
+import { PasswordForm } from "./password-form";
 
-export default function SettingsPage() {
-  const [status, setStatus] = useState<{ tone: "ok" | "error"; text: string } | null>(null);
+export default async function SettingsPage() {
+  const ctx = await getAuthContext();
+  if (!ctx) redirect("/login");
+  const choices = await notificationChoices();
 
   return (
     <div className="space-y-5">
@@ -17,7 +18,7 @@ export default function SettingsPage() {
         kicker="Settings"
         title="This account"
         artWash="bg-charcoal-soft"
-        description="Password and sign-in for you. Tasks, projects, and people stay on their own pages."
+        description="Password, sign-in, and which notifications reach you. Tasks, projects, and people stay on their own pages."
         actions={
           <>
             <Link className={linkButton()} href="/profile">Profile</Link>
@@ -26,33 +27,26 @@ export default function SettingsPage() {
         }
       />
       <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <Card>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Security</p>
-          <h2 className="mt-1 text-lg font-bold">Change password</h2>
-          <p className="mb-4 mt-1 text-sm leading-relaxed text-secondary">Use the password you sign in with. If you no longer know it, someone who can invite accounts can issue a temporary password. The next login asks you to replace it.</p>
-          <form
-            className="max-w-md space-y-3"
-            onSubmit={async (event) => {
-              event.preventDefault();
-              const form = new FormData(event.currentTarget);
-              const currentPassword = String(form.get("currentPassword"));
-              const newPassword = String(form.get("newPassword"));
-              const result = await authClient.changePassword({ currentPassword, newPassword });
-              setStatus(result.error
-                ? { tone: "error", text: result.error.message ?? "Unable to change password." }
-                : { tone: "ok", text: "Password updated." });
-            }}
-          >
-            <Field label="Current password">
-              <PasswordInput name="currentPassword" autoComplete="current-password" required />
-            </Field>
-            <Field label="New password">
-              <PasswordInput name="newPassword" autoComplete="new-password" required minLength={8} />
-            </Field>
-            <Button type="submit">Update password</Button>
-          </form>
-          {status ? <p className={`mt-3 text-sm ${status.tone === "ok" ? "text-success" : "text-error"}`}>{status.text}</p> : null}
-        </Card>
+        <div className="space-y-5">
+          <PasswordForm />
+          <Card>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Notifications</p>
+            <h2 className="mt-1 text-lg font-bold">What reaches you</h2>
+            <p className="mb-4 mt-1 text-sm leading-relaxed text-secondary">Turn a kind off to stop new notices of that kind. Password reset still arrives. Team chat uses the Chats setting.</p>
+            <form action={saveNotificationPreferences} className="space-y-3">
+              {choices.map((choice) => (
+                <label key={choice.kind} className="flex items-start gap-3 rounded-[12px] border border-border px-3 py-2.5">
+                  <input type="checkbox" name={choice.kind} defaultChecked={choice.enabled} className="mt-1" />
+                  <span>
+                    <span className="block text-sm font-semibold text-text">{choice.label}</span>
+                    <span className="block text-xs text-secondary">{choice.detail}</span>
+                  </span>
+                </label>
+              ))}
+              <Button type="submit">Save notification settings</Button>
+            </form>
+          </Card>
+        </div>
         <Card>
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Nearby</p>
           <h2 className="mt-1 text-lg font-bold">Where else to look</h2>

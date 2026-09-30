@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle, Clock, ListChecks, Users } from "lucide-react";
-import { getAuthContext } from "@/lib/auth/context";
-import { isDirectoryPerson, listPeople, listTasks, listTime } from "@/lib/queries";
+import { getAuthContext, hasPermission } from "@/lib/auth/context";
+import { isDirectoryPerson, listPeople, listTasks } from "@/lib/queries";
 import { PersonAvatar } from "@/components/person-avatar";
 import { EmptyState } from "@/components/ui";
 import { RecordList } from "@/components/list-controls";
@@ -11,18 +11,26 @@ import { isTaskOverdue } from "@/lib/permissions";
 export default async function WorkloadPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
+  if (!hasPermission(ctx, "reports:view")) {
+    return (
+      <WorkHero
+        illustration="team"
+        kicker="Workload"
+        title="Assigned work"
+        artWash="bg-purple-soft"
+        description="Assigned-work totals are available to people who can view reports."
+      />
+    );
+  }
   const { view = "all" } = await searchParams;
-  const [peopleRows, tasks, time] = await Promise.all([listPeople(), listTasks(), listTime()]);
+  const [peopleRows, tasks] = await Promise.all([listPeople(), listTasks()]);
   const rows = peopleRows.filter(isDirectoryPerson).map((person) => {
     const assigned = tasks.filter((task) => task.assigneeId === person.id && task.status !== "completed");
     const overdue = assigned.filter((task) => isTaskOverdue(task));
-    const minutes = time.filter((entry) => entry.personId === person.id);
     return {
       person,
       active: assigned.length,
       overdue: overdue.length,
-      planned: minutes.reduce((sum, entry) => sum + entry.plannedMinutes, 0),
-      actual: minutes.reduce((sum, entry) => sum + entry.actualMinutes, 0),
     };
   });
   const filtered = view === "active" ? rows.filter((row) => row.active > 0) : view === "overdue" ? rows.filter((row) => row.overdue > 0) : rows;
@@ -81,7 +89,7 @@ export default async function WorkloadPage({ searchParams }: { searchParams: Pro
                   <p className="text-xs text-secondary">{row.person.positionTitle?.trim() || "No position title"}</p>
                 </div>
               </div>
-              <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
+              <dl className="mt-3 grid grid-cols-2 gap-2">
                 <div className="rounded-[12px] bg-canvas px-3 py-2">
                   <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Active</dt>
                   <dd className="mt-1 text-lg font-bold">{row.active}</dd>
@@ -90,20 +98,12 @@ export default async function WorkloadPage({ searchParams }: { searchParams: Pro
                   <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Overdue</dt>
                   <dd className={`mt-1 text-lg font-bold ${row.overdue > 0 ? "text-error" : "text-text"}`}>{row.overdue}</dd>
                 </div>
-                <div className="rounded-[12px] bg-canvas px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Planned min</dt>
-                  <dd className="mt-1 text-lg font-bold">{row.planned}</dd>
-                </div>
-                <div className="rounded-[12px] bg-canvas px-3 py-2">
-                  <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Actual min</dt>
-                  <dd className="mt-1 text-lg font-bold">{row.actual}</dd>
-                </div>
               </dl>
             </article>
           ))}
         </RecordList>
       )}
-      <p className="text-xs text-secondary">Planned and actual minutes are the sum of recorded time entries. A calendar block is not counted here.</p>
+      <p className="text-xs text-secondary">Active is an assigned task that is not completed. Overdue uses the official deadline. Calendar blocks are planned work and are not counted here.</p>
     </div>
   );
 }

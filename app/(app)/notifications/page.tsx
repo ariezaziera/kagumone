@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
-import { Bell, CircleAlert, Mail } from "lucide-react";
-import { markNotificationsRead } from "@/lib/actions/notifications";
+import { Bell, Mail } from "lucide-react";
 import { NotificationOpenLink } from "@/components/notification-bell";
+import { NotificationPageActions } from "@/components/notification-page-actions";
 import { getAuthContext } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
-import { Button, Badge, EmptyState } from "@/components/ui";
+import { Badge, EmptyState } from "@/components/ui";
 import { RecordList } from "@/components/list-controls";
 import { Metric, ViewPills, WorkHero, linkButton } from "@/components/work-surface";
 import { formatDateTime, readableLabel } from "@/lib/utils";
@@ -28,15 +28,14 @@ export default async function NotificationsPage({ searchParams }: { searchParams
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
   const { filter = "all" } = await searchParams;
-  const view = filter === "unread" || filter === "attention" ? filter : "all";
+  const view = filter === "unread" ? "unread" : "all";
   const rows = (await db.select().from(notifications).where(eq(notifications.personId, ctx.person.id)))
     .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
   const unread = rows.filter((row) => !row.readAt);
-  const attention = rows.filter((row) => !row.handledAt);
-  const filtered = view === "unread" ? unread : view === "attention" ? attention : rows;
+  const filtered = view === "unread" ? unread : rows;
   const summary = rows.length === 0
     ? "Events that need awareness or a next step land here, with a link back to the record."
-    : `${unread.length} unread, ${attention.length} not marked handled.`;
+    : `${unread.length} unread. Opening one marks it read.`;
 
   return (
     <div className="space-y-5">
@@ -48,31 +47,20 @@ export default async function NotificationsPage({ searchParams }: { searchParams
         description={summary}
         actions={
           <>
-            {unread.length > 0 ? (
-              <form
-                action={async () => {
-                  "use server";
-                  await markNotificationsRead();
-                }}
-              >
-                <Button type="submit" variant="secondary">Mark all as read</Button>
-              </form>
-            ) : null}
+            <NotificationPageActions unread={unread.length} hasRows={rows.length > 0} />
             <Link className={linkButton()} href="/settings">Settings</Link>
             <Link className={linkButton()} href="/profile">Profile</Link>
           </>
         }
       />
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-3">
+      <div className="grid grid-cols-2 gap-3">
         <Metric label="All" value={rows.length} note="Notifications addressed to you." icon={Bell} wash="bg-yellow-soft" ink="text-warning" href="/notifications" />
         <Metric label="Unread" value={unread.length} note="Not opened yet." icon={Mail} wash="bg-blue-soft" ink="text-info" href="/notifications?filter=unread" />
-        <Metric label="Open" value={attention.length} note="Not marked handled." icon={CircleAlert} wash="bg-orange-soft" ink="text-orange" href="/notifications?filter=attention" />
       </div>
       <ViewPills
         items={[
           { key: "all", href: "/notifications", label: "All", active: view === "all", count: rows.length },
           { key: "unread", href: "/notifications?filter=unread", label: "Unread", active: view === "unread", count: unread.length },
-          { key: "attention", href: "/notifications?filter=attention", label: "Open", active: view === "attention", count: attention.length },
         ]}
       />
       {filtered.length === 0 ? (
@@ -98,7 +86,6 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                   <div className="flex flex-wrap items-center gap-1.5">
                     <Badge tone="blue">{readableLabel(row.kind)}</Badge>
                     {!row.readAt ? <Badge tone="yellow">Unread</Badge> : null}
-                    {!row.handledAt ? <Badge tone="orange">Open</Badge> : null}
                   </div>
                   {href ? (
                     <NotificationOpenLink id={row.id} href={href} className="mt-1.5 block text-base font-bold text-text hover:text-primary">

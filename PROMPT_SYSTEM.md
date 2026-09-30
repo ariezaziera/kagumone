@@ -1480,6 +1480,8 @@ Use actual recorded entries for actual time.
 
 Do not infer actual work duration merely from task status changes.
 
+The standalone `/time-tracking` page is not in the app. Planned time is recorded as planned work on the calendar. Workload may still read old `time_entries` rows. Do not invent actual minutes from task status.
+
 ---
 
 # 52. WORKLOAD
@@ -1681,7 +1683,8 @@ KAGUM ONE
 │   ├── Login
 │   ├── Forgot Password
 │   ├── Reset Password
-│   └── Account Activation
+│   ├── Account Activation
+│   └── First Password
 │
 ├── WORKSPACE
 │   ├── Dashboard
@@ -1697,6 +1700,7 @@ KAGUM ONE
 │   ├── Content QC
 │   ├── Publishing
 │   ├── Notices
+│   ├── Chats
 │   ├── Equipment
 │   │   └── Equipment Detail
 │   └── Files
@@ -1704,7 +1708,6 @@ KAGUM ONE
 ├── PERFORMANCE
 │   ├── KPI
 │   ├── Reports
-│   ├── Time Tracking
 │   └── Workload
 │
 ├── PEOPLE
@@ -3930,6 +3933,7 @@ App Router routes now include:
 /forgot-password
 /reset-password
 /activate
+/first-password
 /dashboard
 /projects
 /projects/:id
@@ -3943,12 +3947,12 @@ App Router routes now include:
 /content/:id/qc
 /publishing
 /notices
+/chats
 /equipment
 /equipment/:id
 /files
 /kpi
 /reports
-/time-tracking
 /workload
 /team
 /team/:id
@@ -3986,13 +3990,13 @@ WORKSPACE
 ├── Calendar
 ├── Content
 ├── Notices
+├── Chats
 ├── Equipment
 └── Files
 
 PERFORMANCE
 ├── KPI
 ├── Reports
-├── Time Tracking
 └── Workload
 
 PEOPLE
@@ -4038,13 +4042,15 @@ The final sidebar should be:
 
 # 159. MOBILE NAVIGATION
 
-Mobile should prioritize:
+The shipped phone bar is:
 
 * Dashboard
 * Tasks
 * Calendar
+* Chats
 * Notifications
-* More
+
+The menu button opens the full sidebar. `/more` lists the same groups and is not on the phone bar. A red count on a phone or sidebar item means something is waiting there: a task to acknowledge or already overdue, work due today, an unread chat, an unread notice, a pending approval, or an overdue loan.
 
 A prominent "+" action may be used for:
 
@@ -4061,16 +4067,13 @@ Do not overload mobile navigation with every module.
 
 Quick actions should represent real frequent actions.
 
-Potential actions:
+The header New menu currently offers, when the person has the matching permission:
 
 * Create Task
 * New Project
 * Add Content
-* Request QC
-* Schedule Post
+* Post Notice
 * Borrow Equipment
-* Add KPI Entry
-* Log Activity
 
 Only show actions the current user is authorized to perform.
 

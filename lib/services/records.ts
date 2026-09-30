@@ -1,5 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { activityLogs, auditLogs, notifications } from "@/lib/db/schema";
+import { activityLogs, auditLogs, notificationPreferences, notifications } from "@/lib/db/schema";
+import { ALWAYS_ON_NOTIFICATION_KINDS } from "@/lib/notification-kinds";
 import { newId, now } from "@/lib/utils";
 
 export async function recordActivity(input: {
@@ -47,6 +49,15 @@ export async function notify(input: {
   href?: string;
   kind: string;
 }) {
+  const alwaysOn = (ALWAYS_ON_NOTIFICATION_KINDS as readonly string[]).includes(input.kind);
+  if (!alwaysOn) {
+    const [preference] = await db
+      .select()
+      .from(notificationPreferences)
+      .where(and(eq(notificationPreferences.personId, input.personId), eq(notificationPreferences.kind, input.kind)))
+      .limit(1);
+    if (preference && !preference.enabled) return;
+  }
   await db.insert(notifications).values({
     id: newId(),
     personId: input.personId,

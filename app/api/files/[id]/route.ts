@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { getAuthContext } from "@/lib/auth/context";
 import { readStoredFile } from "@/lib/integrations/storage";
-import { listFiles } from "@/lib/queries";
+import { readableFile } from "@/lib/queries";
 
 export const runtime = "nodejs";
 
@@ -14,7 +14,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
   const ctx = await getAuthContext();
   if (!ctx) return new NextResponse(null, { status: 401 });
   const { id } = await params;
-  const file = (await listFiles()).find((row) => row.id === id);
+  const file = await readableFile(id);
   if (!file) return new NextResponse(null, { status: 404 });
   const stored = await readStoredFile(file.storageKey);
   if (!stored) return new NextResponse(null, { status: 404 });

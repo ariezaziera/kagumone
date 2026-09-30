@@ -121,10 +121,18 @@ export type ChatListItem = {
   id: string;
   kind: "team" | "direct" | "group";
   title: string;
+  meta: string;
   preview: string;
   updatedAt: Date;
   unread: number;
   pinned: boolean;
+};
+
+export type ChatMember = {
+  id: string;
+  name: string;
+  you: boolean;
+  owner: boolean;
 };
 
 export type ChatFile = { id: string; filename: string; mimeType: string | null };
@@ -150,6 +158,7 @@ export type ChatThread = {
   chatPinned: boolean;
   closeLabel: string | null;
   canManage: boolean;
+  members: ChatMember[];
   invitees: { id: string; name: string }[];
   pinnedMessage: { id: string; body: string; authorName: string } | null;
   messages: ChatMessageView[];
@@ -174,6 +183,38 @@ function conversationTitle(
   if (conversation.kind === "group") return conversation.title?.trim() || "Group";
   const otherId = members.find((member) => member.personId !== viewerId)?.personId;
   return names.get(otherId ?? "") ?? "Conversation";
+}
+
+export async function unreadChatCount() {
+  const ctx = await requireViewer();
+  await ensureTeamConversation();
+  const directory = await loadDirectory();
+  const hideDemo = await hideDemoWorkspace();
+  const [conversations, participants] = await Promise.all([
+    db.select().from(chatConversations),
+    db.select().from(chatParticipants),
+  ]);
+  const mineByConversation = new Map(participants.filter((row) => row.personId === ctx.person.id).map((row) => [row.conversationId, row]));
+  const visible = conversations.filter((conversation) => {
+    if (conversation.deletedAt) return false;
+    const mine = mineByConversation.get(conversation.id);
+    if (conversation.kind === "team") return !mine?.hiddenAt;
+    if (mine?.hiddenAt || mine?.leftAt) return false;
+    if (conversation.kind === "group") return Boolean(mine);
+    if (conversation.kind !== "direct" || !mine) return false;
+    if (!hideDemo) return true;
+    const others = participants.filter((row) => row.conversationId === conversation.id && row.personId !== ctx.person.id);
+    return !others.some((row) => directory.find((person) => person.id === row.personId)?.isDemo);
+  });
+  let total = 0;
+  for (const conversation of visible) {
+    const readAt = mineByConversation.get(conversation.id)?.lastReadAt ?? null;
+    const unreadWhere = [eq(chatMessages.conversationId, conversation.id), ne(chatMessages.authorId, ctx.person.id), isNull(chatMessages.deletedAt)];
+    if (readAt) unreadWhere.push(gt(chatMessages.createdAt, readAt));
+    const [unreadRow] = await db.select({ value: count() }).from(chatMessages).where(and(...unreadWhere));
+    total += Number(unreadRow?.value ?? 0);
+  }
+  return total;
 }
 
 export async function loadChatPage(conversationId: string | null) {
@@ -213,11 +254,13 @@ export async function loadChatPage(conversationId: string | null) {
     const unreadWhere = [eq(chatMessages.conversationId, conversation.id), ne(chatMessages.authorId, ctx.person.id), isNull(chatMessages.deletedAt)];
     if (readAt) unreadWhere.push(gt(chatMessages.createdAt, readAt));
     const [unreadRow] = await db.select({ value: count() }).from(chatMessages).where(and(...unreadWhere));
-    const members = participants.filter((row) => row.conversationId === conversation.id);
+    const members = participants.filter((row) => row.conversationId === conversation.id && !row.leftAt);
+    const kind = conversation.kind === "group" ? "group" : conversation.kind === "team" ? "team" : "direct";
     items.push({
       id: conversation.id,
-      kind: conversation.kind === "group" ? "group" : conversation.kind === "team" ? "team" : "direct",
+      kind,
       title: conversationTitle(conversation, members, names, ctx.person.id),
+      meta: kind === "group" ? `Group · ${members.length} ${members.length === 1 ? "person" : "people"}` : kind === "team" ? "Team" : "Private",
       preview: !latest ? "No messages yet" : latest.authorId === ctx.person.id ? `You: ${clip(latest.body)}` : clip(latest.body),
       updatedAt: latest?.createdAt ?? conversation.updatedAt,
       unread: Number(unreadRow?.value ?? 0),
@@ -249,6 +292,14 @@ export async function loadChatPage(conversationId: string | null) {
       const members = access.members.filter((member) => !member.leftAt);
       const canManage = access.conversation.kind === "group" && access.conversation.createdById === ctx.person.id;
       const memberIds = new Set(members.map((member) => member.personId));
+      const memberViews: ChatMember[] = members
+        .map((member) => ({
+          id: member.personId,
+          name: names.get(member.personId) ?? "Teammate",
+          you: member.personId === ctx.person.id,
+          owner: member.personId === access.conversation.createdById,
+        }))
+        .sort((left, right) => Number(right.owner) - Number(left.owner) || left.name.localeCompare(right.name));
       const pinnedRow = rows.find((row) => row.pinnedAt && !row.deletedAt) ?? null;
       const kind = access.conversation.kind === "group" ? "group" : access.conversation.kind === "team" ? "team" : "direct";
       thread = {
@@ -260,10 +311,11 @@ export async function loadChatPage(conversationId: string | null) {
             ? "Everyone signed in can read this chat."
             : kind === "direct"
               ? "Only the two of you can read this chat."
-              : `${members.length} ${members.length === 1 ? "person" : "people"} in this group.`,
+              : memberViews.map((member) => (member.you ? "You" : member.name)).join(", "),
         chatPinned: Boolean(access.mine?.pinned),
         closeLabel: kind === "team" ? null : canManage ? "Delete group" : kind === "group" ? "Leave group" : "Delete chat",
         canManage,
+        members: kind === "group" ? memberViews : [],
         invitees: canManage ? partners.filter((person) => !memberIds.has(person.id)) : [],
         pinnedMessage: pinnedRow
           ? {
@@ -521,6 +573,18 @@ export async function postChatMessage(conversationId: string, body: string, file
       ? directory.filter((person) => person.id !== ctx.person.id && person.organizationalStatus === "active" && person.userId).map((person) => person.id)
       : access.members.filter((member) => member.personId !== ctx.person.id && !member.leftAt).map((member) => member.personId);
   await notifyPeople(recipients, { title, body: preview, href: `/chats?c=${access.conversation.id}` });
+  const place = access.conversation.kind === "group"
+    ? access.conversation.title || "a group"
+    : access.conversation.kind === "team"
+      ? "team chat"
+      : "a private chat";
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "chat.message",
+    entityType: "chat",
+    entityId: access.conversation.id,
+    summary: `${ctx.person.fullName} sent a message in ${place}.`,
+  });
 }
 
 export async function markConversationRead(conversationId: string) {
@@ -545,9 +609,16 @@ export async function setChatPinned(conversationId: string, pinned: boolean) {
       pinned,
       createdAt: now(),
     });
-    return;
+  } else {
+    await db.update(chatParticipants).set({ pinned }).where(eq(chatParticipants.id, access.mine.id));
   }
-  await db.update(chatParticipants).set({ pinned }).where(eq(chatParticipants.id, access.mine.id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: pinned ? "chat.pinned" : "chat.unpinned",
+    entityType: "chat",
+    entityId: access.conversation.id,
+    newValue: { pinned },
+  });
 }
 
 export async function setMessagePinned(conversationId: string, messageId: string, pinned: boolean) {
@@ -560,6 +631,20 @@ export async function setMessagePinned(conversationId: string, messageId: string
   if (!message || message.deletedAt) throw new Error("That message is not available.");
   await db.update(chatMessages).set({ pinnedAt: null }).where(eq(chatMessages.conversationId, access.conversation.id));
   if (pinned) await db.update(chatMessages).set({ pinnedAt: now() }).where(eq(chatMessages.id, message.id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: pinned ? "chat.message_pinned" : "chat.message_unpinned",
+    entityType: "chat_message",
+    entityId: message.id,
+    newValue: { conversationId: access.conversation.id, pinned },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: pinned ? "chat.message_pinned" : "chat.message_unpinned",
+    entityType: "chat",
+    entityId: access.conversation.id,
+    summary: `${ctx.person.fullName} ${pinned ? "pinned" : "unpinned"} a message.`,
+  });
 }
 
 export async function setMessageStarred(messageId: string, starred: boolean) {
@@ -578,6 +663,15 @@ export async function setMessageStarred(messageId: string, starred: boolean) {
     await db.insert(chatStars).values({ id: newId(), messageId: message.id, personId: ctx.person.id, createdAt: now() });
   }
   if (!starred && existing) await db.delete(chatStars).where(eq(chatStars.id, existing.id));
+  if (starred !== Boolean(existing)) {
+    await recordAudit({
+      actorId: ctx.person.id,
+      action: starred ? "chat.message_starred" : "chat.message_unstarred",
+      entityType: "chat_message",
+      entityId: message.id,
+      newValue: { starred },
+    });
+  }
 }
 
 export async function deleteChatMessage(messageId: string) {
