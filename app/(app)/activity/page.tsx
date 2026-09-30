@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { ClipboardList, ScrollText, Users } from "lucide-react";
 import { listActivity, listAudit, listPeople } from "@/lib/queries";
-import { recordHref } from "@/components/record-files";
+import { historyHref } from "@/components/record-files";
 import { PersonAvatar } from "@/components/person-avatar";
 import { Badge, EmptyState } from "@/components/ui";
 import { RecordList } from "@/components/list-controls";
@@ -51,13 +51,6 @@ function traceBody(previous?: string | null, next?: string | null) {
 function actionLabel(action: string) {
   const tail = action.includes(".") ? action.split(".").slice(1).join(".") : action;
   return readableLabel(tail);
-}
-
-function historyHref(type: string, id: string) {
-  if (type === "person") return `/team/${id}`;
-  if (type === "approval") return "/approvals";
-  if (type === "setting") return "/admin";
-  return recordHref(type, id);
 }
 
 export default async function ActivityPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {

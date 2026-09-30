@@ -50,7 +50,7 @@ export default async function ReportsPage() {
       <div className="grid gap-3 md:grid-cols-3">
         <Metric label="Projects" value={projects.length} note="Project records you can open." icon={FolderKanban} wash="bg-blue-soft" ink="text-info" href="/projects" />
         <Metric label="Open tasks" value={open.length} note="Tasks that are not completed." icon={ListChecks} wash="bg-yellow-soft" ink="text-warning" href="/tasks" />
-        <Metric label="Overdue" value={overdue.length} note="Official deadline has passed." icon={AlertTriangle} wash="bg-primary-light" ink="text-primary" href="/tasks" valueClass={overdue.length > 0 ? "text-error" : "text-text"} />
+        <Metric label="Overdue" value={overdue.length} note="Official deadline has passed." icon={AlertTriangle} wash="bg-primary-light" ink="text-primary" href="/tasks?tab=overdue" valueClass={overdue.length > 0 ? "text-error" : "text-text"} />
       </div>
       <section id="export" className="space-y-3">
         <div>

@@ -61,14 +61,14 @@ export default async function MyTasksPage() {
       />
 
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
-        <Metric label="Open" value={open.length} note="Assigned to you and not completed." icon={ListChecks} wash="bg-yellow-soft" ink="text-warning" />
-        <Metric label="Overdue" value={overdue.length} note="Official deadline has passed." icon={AlertTriangle} wash="bg-error-soft" ink="text-error" valueClass={overdue.length ? "text-error" : undefined} />
-        <Metric label="To acknowledge" value={waiting.length} note="Assigned, and not yet accepted." icon={Hourglass} wash="bg-yellow-soft" ink="text-warning" />
-        <Metric label="In progress" value={inProgress.length} note="You have started these." icon={CheckCheck} wash="bg-purple-soft" ink="text-purple" />
+        <Metric label="Open" value={open.length} note="Assigned to you and not completed." icon={ListChecks} wash="bg-yellow-soft" ink="text-warning" href="#lanes" />
+        <Metric label="Overdue" value={overdue.length} note="Official deadline has passed." icon={AlertTriangle} wash="bg-error-soft" ink="text-error" valueClass={overdue.length ? "text-error" : undefined} href="#overdue" />
+        <Metric label="To acknowledge" value={waiting.length} note="Assigned, and not yet accepted." icon={Hourglass} wash="bg-yellow-soft" ink="text-warning" href="#lane-pending_acknowledgement" />
+        <Metric label="In progress" value={inProgress.length} note="You have started these." icon={CheckCheck} wash="bg-purple-soft" ink="text-purple" href="#lane-in_progress" />
       </div>
 
       {dueToday.length ? (
-        <Card accent="orange">
+        <Card id="due-today" accent="orange" className="scroll-mt-4">
           <div className="mb-3 flex items-center gap-2">
             <span className="flex h-9 w-9 items-center justify-center rounded-[12px] bg-orange-soft text-orange">
               <CalendarClock size={16} aria-hidden />
@@ -92,7 +92,7 @@ export default async function MyTasksPage() {
       ) : null}
 
       {overdue.length ? (
-        <Card accent="red" className="border-error/40">
+        <Card id="overdue" accent="red" className="scroll-mt-4 border-error/40">
           <div className="mb-3 flex items-start justify-between gap-3">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-error">Needs attention</p>
@@ -112,15 +112,17 @@ export default async function MyTasksPage() {
           </div>
         </Card>
       ) : (
-        <EmptyState title="Nothing overdue" body="Overdue is based on the official deadline, not planned work time." />
+        <div id="overdue" className="scroll-mt-4">
+          <EmptyState title="Nothing overdue" body="Overdue is based on the official deadline, not planned work time." />
+        </div>
       )}
 
-      <div className="grid items-start gap-4 lg:grid-cols-2">
+      <div id="lanes" className="grid scroll-mt-4 items-start gap-4 lg:grid-cols-2">
         {visibleLanes.map(([status, note]) => {
           const lane = mine.filter((task) => task.status === status);
           const face = statusFace(status);
           return (
-            <section key={status} className="overflow-hidden rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
+            <section id={`lane-${status}`} className="scroll-mt-4 overflow-hidden rounded-[18px] border border-border bg-surface shadow-[var(--shadow-card)]">
               <div className={`flex items-start justify-between gap-3 px-4 py-3 ${face.wash}`}>
                 <div>
                   <h2 className="text-base font-bold text-text">{readableLabel(status)}</h2>

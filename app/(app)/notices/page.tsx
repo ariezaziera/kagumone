@@ -106,7 +106,7 @@ export default async function NoticesPage({ searchParams }: { searchParams: Prom
           )}
         </section>
         {canPost ? (
-          <Card id="post-notice" className="xl:sticky xl:top-20">
+          <Card id="post-notice" className="scroll-mt-4 xl:sticky xl:top-20">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Post</p>
             <h2 className="mt-1 text-lg font-bold">New notice</h2>
             <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">This publishes to the team board and the dashboard. It does not approve work or replace an SOP.</p>

@@ -89,7 +89,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             </RecordList>
           )}
         </section>
-        <Card id="create-project" className="xl:sticky xl:top-20">
+        <Card id="create-project" className="scroll-mt-4 xl:sticky xl:top-20">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">New record</p>
           <h2 className="mt-1 text-lg font-bold">Create project</h2>
           <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">Name, objective, and owner live on the project record.</p>

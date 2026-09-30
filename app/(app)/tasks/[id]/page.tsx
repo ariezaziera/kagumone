@@ -101,8 +101,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
       </Link>
       <WorkHero
         illustration="tasks"
-        kicker="Work Task Notice — Martech Department"
+        kicker="Task"
         title={task.title}
+        artWash="bg-yellow-soft"
         description={task.purpose || "Formal assigned task record. Official status, assignee, and deadline live here."}
         actions={
           <>

@@ -85,7 +85,7 @@ export default async function ContentPage({ searchParams }: { searchParams: Prom
             </RecordList>
           )}
         </section>
-        <Card id="add-content" className="xl:sticky xl:top-20">
+        <Card id="add-content" className="scroll-mt-4 xl:sticky xl:top-20">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">New record</p>
           <h2 className="mt-1 text-lg font-bold">Add content</h2>
           <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">A new record starts the production and QC loop. Planned is not the same as published.</p>

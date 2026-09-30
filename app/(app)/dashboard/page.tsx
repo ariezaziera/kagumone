@@ -5,6 +5,7 @@ import { Illustration } from "@/components/illustrations";
 import { formatDate, formatDateTime, readableLabel } from "@/lib/utils";
 import { CONTENT_STAGES } from "@/lib/permissions";
 import { NoticeCarousel } from "@/components/notice-carousel";
+import { historyHref } from "@/components/record-files";
 import { AlertTriangle, Bell, CalendarDays, Clapperboard, FolderKanban, ListChecks, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -179,7 +180,7 @@ export default async function DashboardPage() {
             ink="text-warning"
           />
           <StatTile
-            href="/my-tasks"
+            href={dueToday > 0 ? "/my-tasks#due-today" : "/my-tasks"}
             label="Due today"
             value={dueToday}
             note="Official deadline falls on today."
@@ -188,7 +189,7 @@ export default async function DashboardPage() {
             ink="text-orange"
           />
           <StatTile
-            href="/my-tasks"
+            href="/my-tasks#overdue"
             label="Overdue"
             value={data.overdue.length}
             note="Past the official deadline."
@@ -345,12 +346,21 @@ export default async function DashboardPage() {
           <EmptyState plain title="No activity yet" body="Operational events will be recorded here." illustration="none" />
         ) : (
             <ul className="kagum-list text-sm">
-              {data.activity.map((entry) => (
+              {data.activity.map((entry) => {
+                const href = historyHref(entry.entityType, entry.entityId);
+                return (
                 <li key={entry.id} data-record="" data-sort={entry.createdAt ? new Date(entry.createdAt).toISOString() : ""} className="flex items-start justify-between gap-3">
-                  <span className="font-medium text-text">{entry.summary}</span>
+                  {href ? (
+                    <Link className="font-medium text-text" href={href}>
+                      {entry.summary}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-text">{entry.summary}</span>
+                  )}
                   <span className="shrink-0 text-xs text-secondary">{formatDateTime(entry.createdAt)}</span>
                 </li>
-              ))}
+                );
+              })}
             </ul>
         )}
       </Card>

@@ -116,7 +116,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
         </section>
 
         {canCreate ? (
-          <Card id="create-task" className="xl:sticky xl:top-20">
+          <Card id="create-task" className="scroll-mt-4 xl:sticky xl:top-20">
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">New record</p>
             <h2 className="mt-1 text-lg font-bold">Create task</h2>
             <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">

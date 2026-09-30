@@ -6,6 +6,8 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ArrowLeftRight,
+  Award,
+  BarChart3,
   Bell,
   BookOpen,
   Bot,
@@ -27,6 +29,7 @@ import {
   Send,
   Settings,
   Shield,
+  SlidersHorizontal,
   SquareKanban,
   Users,
   X,
@@ -52,13 +55,13 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "/equipment": Camera,
   "/kpi": Gauge,
   "/reports": FileText,
-  "/workload": Gauge,
+  "/workload": BarChart3,
   "/team": Users,
-  "/skills": BookOpen,
+  "/skills": Award,
   "/approvals": Shield,
   "/activity": History,
   "/handover": ArrowLeftRight,
-  "/admin": Settings,
+  "/admin": SlidersHorizontal,
   "/notifications": Bell,
   "/ai": Bot,
   "/profile": CircleUser,
@@ -257,11 +260,11 @@ export function AppShell({
                 <Plus size={14} /> <span className="hidden sm:inline">New</span>
               </summary>
               <div className="absolute right-0 z-30 mt-2 w-52 rounded-[16px] border border-border bg-surface p-2 text-sm shadow-[var(--shadow-lift)]">
-                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/tasks">Create Task</Link> : null}
-                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/projects">New Project</Link> : null}
-                {can("content:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/content">Add Content</Link> : null}
-                {can("announcement:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/notices">Post Notice</Link> : null}
-                {can("equipment:borrow") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/equipment">Borrow Equipment</Link> : null}
+                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/tasks#create-task">Create Task</Link> : null}
+                {can("task:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/projects#create-project">New Project</Link> : null}
+                {can("content:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/content#add-content">Add Content</Link> : null}
+                {can("announcement:create") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/notices#post-notice">Post Notice</Link> : null}
+                {can("equipment:borrow") ? <Link className="block rounded-[10px] px-2 py-1.5 transition-colors hover:bg-primary-light active:bg-[#f8d4d6]" href="/equipment#borrow">Borrow Equipment</Link> : null}
               </div>
             </details>
             <Button variant="ghost" className="hidden lg:inline-flex" onClick={signOut}>

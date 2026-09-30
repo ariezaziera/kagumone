@@ -15,6 +15,14 @@ export function recordHref(type: string | null | undefined, id: string | null | 
   return null;
 }
 
+export function historyHref(type: string | null | undefined, id: string | null | undefined) {
+  if (!type || !id) return null;
+  if (type === "person") return `/team/${id}`;
+  if (type === "approval") return "/approvals";
+  if (type === "setting") return "/admin";
+  return recordHref(type, id);
+}
+
 export function FileCards({
   rows,
 }: {

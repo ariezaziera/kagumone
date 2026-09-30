@@ -151,7 +151,7 @@ export default async function EquipmentPage({ searchParams }: { searchParams: Pr
             </Card>
           )}
           {canBorrow && items.length > 0 ? (
-            <Card id="borrow">
+            <Card id="borrow" className="scroll-mt-4">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Loan</p>
               <h2 className="mt-1 text-lg font-bold">Borrow</h2>
               <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">A loan needs a purpose, an expected return, and at least 2 before photos on the record.</p>
