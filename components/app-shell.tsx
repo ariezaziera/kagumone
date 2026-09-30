@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ArrowLeftRight,
   Award,
@@ -40,6 +40,8 @@ import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth/client";
 import { PersonAvatar } from "@/components/person-avatar";
 import { BrandWordmark, Button, buttonClass, iconButtonClass } from "@/components/ui";
+import { NotificationBell } from "@/components/notification-bell";
+import type { NotificationPreview } from "@/lib/queries";
 
 const NAV_ICONS: Record<string, LucideIcon> = {
   "/dashboard": LayoutDashboard,
@@ -158,6 +160,7 @@ function SidebarGroup({
 
 export function AppShell({
   children,
+  notices,
   personName,
   personId,
   hasPhoto,
@@ -166,6 +169,7 @@ export function AppShell({
   isDev,
 }: {
   children: React.ReactNode;
+  notices: NotificationPreview;
   personName: string;
   personId: string;
   hasPhoto: boolean;
@@ -175,6 +179,8 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(notices.unread);
+  const reportUnread = useCallback((value: number) => setUnread(value), []);
   const can = (perm?: string) => !perm || permissions.includes(perm);
   const avatar = (key: string) => (
     <PersonAvatar key={key} personId={personId} name={personName} hasPhoto={hasPhoto} version={photoVersion} size="sm" />
@@ -252,9 +258,7 @@ export function AppShell({
               <span className="truncate">{personName}</span>
             </p>
             <div className="ml-auto flex items-center gap-1">
-            <Link href="/notifications" aria-label="Notifications" className={iconButtonClass("p-2")}>
-              <Bell size={18} />
-            </Link>
+            <NotificationBell initial={notices} onUnread={reportUnread} />
             <details className="relative">
               <summary className={buttonClass("primary", "kagum-menu-open list-none px-2.5 py-1.5 sm:px-3")}>
                 <Plus size={14} /> <span className="hidden sm:inline">New</span>
@@ -290,11 +294,12 @@ export function AppShell({
             >
               <span
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors",
+                  "relative flex h-8 w-8 items-center justify-center rounded-[12px] transition-colors",
                   active ? "bg-primary-light" : "group-hover:bg-canvas group-active:bg-charcoal-soft",
                 )}
               >
                 <Icon size={18} aria-hidden />
+                {item.href === "/notifications" && unread > 0 ? <span className="absolute right-1 top-1 h-2 w-2 rounded-full bg-primary ring-2 ring-surface" aria-hidden /> : null}
               </span>
               {item.label}
             </Link>

@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from "drizzle-orm";
+import { and, count, desc, eq, isNull, ne } from "drizzle-orm";
 import { db } from "@/lib/db";
 import {
   activityLogs,
@@ -21,6 +21,7 @@ import {
   timeEntries,
 } from "@/lib/db/schema";
 import { isTaskOverdue } from "@/lib/permissions";
+import { formatDateTime } from "@/lib/utils";
 import { demoPersonIds, hideDemoWorkspace, isSeedEquipment, onlyDemoPeople } from "@/lib/services/demo-scope";
 
 async function demoGate() {
@@ -221,6 +222,32 @@ export async function keepUnlessDemoOwned<T>(rows: T[], personIds: (row: T) => A
   const demoIds = await demoGate();
   if (!demoIds) return rows;
   return rows.filter((row) => !onlyDemoPeople(personIds(row), demoIds));
+}
+
+export type NotificationPreview = {
+  unread: number;
+  items: { id: string; title: string; body: string; href: string; unread: boolean; timeLabel: string }[];
+};
+
+export async function notificationPreview(personId: string): Promise<NotificationPreview> {
+  const [countRow, rows] = await Promise.all([
+    db
+      .select({ value: count() })
+      .from(notifications)
+      .where(and(eq(notifications.personId, personId), isNull(notifications.readAt))),
+    db.select().from(notifications).where(eq(notifications.personId, personId)).orderBy(desc(notifications.createdAt)).limit(5),
+  ]);
+  return {
+    unread: Number(countRow[0]?.value ?? 0),
+    items: rows.map((row) => ({
+      id: row.id,
+      title: row.title,
+      body: row.body.length > 160 ? `${row.body.slice(0, 157)}...` : row.body,
+      href: row.href && row.href !== "#" ? row.href : "/notifications",
+      unread: !row.readAt,
+      timeLabel: formatDateTime(row.createdAt),
+    })),
+  };
 }
 
 export async function incompleteTasksFor(personId: string) {

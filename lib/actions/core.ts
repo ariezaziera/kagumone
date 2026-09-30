@@ -1,6 +1,6 @@
 "use server";
 
-import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { and, desc, eq, or } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
@@ -1528,14 +1528,6 @@ export async function createAnnouncement(form: FormData) {
     summary: `${ctx.person.fullName} posted ${readableLabel(kind)}.`,
   });
   revalidateMany(["/dashboard", "/notices"]);
-}
-
-export async function markNotificationsRead() {
-  const ctx = await getAuthContext();
-  if (!ctx) throw new Error("You must be signed in.");
-  const { notifications } = await import("@/lib/db/schema");
-  await db.update(notifications).set({ readAt: now() }).where(and(eq(notifications.personId, ctx.person.id), isNull(notifications.readAt)));
-  revalidatePath("/notifications");
 }
 
 export async function createDepartment(form: FormData) {

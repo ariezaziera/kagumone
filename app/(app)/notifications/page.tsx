@@ -2,7 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { eq } from "drizzle-orm";
 import { Bell, CircleAlert, Mail } from "lucide-react";
-import { markNotificationsRead } from "@/lib/actions/core";
+import { markNotificationsRead } from "@/lib/actions/notifications";
+import { NotificationOpenLink } from "@/components/notification-bell";
 import { getAuthContext } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { notifications } from "@/lib/db/schema";
@@ -100,7 +101,9 @@ export default async function NotificationsPage({ searchParams }: { searchParams
                     {!row.handledAt ? <Badge tone="orange">Open</Badge> : null}
                   </div>
                   {href ? (
-                    <Link href={href} className="mt-1.5 block text-base font-bold text-text hover:text-primary">{row.title}</Link>
+                    <NotificationOpenLink id={row.id} href={href} className="mt-1.5 block text-base font-bold text-text hover:text-primary">
+                      {row.title}
+                    </NotificationOpenLink>
                   ) : (
                     <h2 className="mt-1.5 text-base font-bold text-text">{row.title}</h2>
                   )}
