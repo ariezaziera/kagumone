@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { KeyRound, Mail, ScrollText, Settings2 } from "lucide-react";
-import { saveSetting } from "@/lib/actions/core";
+import { Building2, KeyRound, Mail, ScrollText, Settings2 } from "lucide-react";
+import { cancelInvitation, createDepartment, deleteDepartment, deleteSetting, saveSetting, updateDepartment, updateRoleLabel } from "@/lib/actions/core";
+import { loadDepartments } from "@/lib/services/departments";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { db } from "@/lib/db";
 import { invitations, permissions, rolePermissions, roles, settings } from "@/lib/db/schema";
 import { listAudit, listPeople } from "@/lib/queries";
 import { ActionForm } from "@/components/action-form";
-import { Badge, Card, EmptyState, Field, Input, Textarea, statusTone } from "@/components/ui";
+import { Badge, Card, EmptyState, Field, Input, Select, Textarea, statusTone } from "@/components/ui";
 import { Metric, WorkHero, linkButton } from "@/components/work-surface";
 import { formatDateTime, readableLabel } from "@/lib/utils";
 
@@ -31,7 +32,7 @@ export default async function AdminPage() {
   if (!hasPermission(ctx, "administration:manage")) {
     return <EmptyState illustration="search" title="Administration needs permission" body="Managing roles, settings, and invitations uses the administration permission." />;
   }
-  const [roleRows, permRows, grants, settingRows, invites, audit, peopleRows] = await Promise.all([
+  const [roleRows, permRows, grants, settingRows, invites, audit, peopleRows, departmentData] = await Promise.all([
     db.select().from(roles),
     db.select().from(permissions),
     db.select().from(rolePermissions),
@@ -39,6 +40,7 @@ export default async function AdminPage() {
     db.select().from(invitations),
     listAudit(12),
     listPeople(),
+    loadDepartments(),
   ]);
   const peopleById = new Map(peopleRows.map((person) => [person.id, person]));
   const permById = new Map(permRows.map((perm) => [perm.id, perm]));
@@ -65,7 +67,8 @@ export default async function AdminPage() {
         description={`${orderedRoles.length} roles, ${permRows.length} capabilities, ${orderedSettings.length} settings. Configuration stays separate from day-to-day records.`}
         actions={
           <>
-            <a className={linkButton("primary")} href="#settings">Settings</a>
+            <a className={linkButton("primary")} href="#departments">Departments</a>
+            <a className={linkButton()} href="#settings">Settings</a>
             <a className={linkButton()} href="#roles">Roles</a>
             <a className={linkButton()} href="#invitations">Invitations</a>
             <Link className={linkButton()} href="/activity?view=audit">Audit</Link>
@@ -73,11 +76,62 @@ export default async function AdminPage() {
         }
       />
       <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+        <Metric label="Departments" value={departmentData.departments.filter((department) => department.status === "active").length} note="Choices on account and profile forms." icon={Building2} wash="bg-pink-soft" ink="text-pink" href="#departments" />
         <Metric label="Roles" value={orderedRoles.length} note="Labels that hold stored capabilities." icon={KeyRound} wash="bg-charcoal-soft" ink="text-charcoal" href="#roles" />
         <Metric label="Capabilities" value={permRows.length} note="Explicit permissions in the system." icon={KeyRound} wash="bg-purple-soft" ink="text-purple" href="#roles" />
         <Metric label="Settings" value={orderedSettings.length} note="Stored configuration values." icon={Settings2} wash="bg-blue-soft" ink="text-info" href="#settings" />
         <Metric label="Invitations" value={invites.length} note={pendingInvites === 0 ? "None are still pending." : pendingInvites === 1 ? "1 is still pending." : `${pendingInvites} are still pending.`} icon={Mail} wash="bg-yellow-soft" ink="text-warning" href="#invitations" />
       </div>
+
+      <section id="departments" className="space-y-3">
+        <h2 className="text-lg font-bold">Departments</h2>
+        <p className="text-sm text-secondary">These names are the department choices on account and profile forms. Inactive departments stay on people who already have them, and drop out of the choices.</p>
+        <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
+          <div className="min-w-0 space-y-3">
+            {departmentData.departments.length === 0 ? (
+              <EmptyState illustration="team" title="No departments" body="Add a department to offer it on account and profile forms." />
+            ) : (
+              departmentData.departments.map((department) => {
+                const members = departmentData.memberCount.get(department.id) ?? 0;
+                return (
+                  <article key={department.id} className="rounded-[18px] border border-border bg-surface p-4 shadow-[var(--shadow-card)]">
+                    <div className="mb-3 flex flex-wrap items-center gap-2">
+                      <h3 className="text-base font-bold">{department.name}</h3>
+                      <Badge tone={statusTone(department.status)}>{readableLabel(department.status)}</Badge>
+                      <span className="text-xs text-secondary">{members === 1 ? "1 person" : `${members} people`}</span>
+                    </div>
+                    <ActionForm action={updateDepartment} submitLabel="Save department">
+                      <input type="hidden" name="id" value={department.id} />
+                      <Field label="Name"><Input name="name" defaultValue={department.name} required /></Field>
+                      <Field label="Code"><Input name="code" defaultValue={department.code} required maxLength={12} /></Field>
+                      <Field label="Status">
+                        <Select name="status" defaultValue={department.status}>
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </Select>
+                      </Field>
+                    </ActionForm>
+                    <div className="mt-3 border-t border-border pt-3">
+                      <ActionForm action={deleteDepartment} submitLabel="Delete department">
+                        <input type="hidden" name="id" value={department.id} />
+                      </ActionForm>
+                    </div>
+                  </article>
+                );
+              })
+            )}
+          </div>
+          <Card id="add-department" className="xl:sticky xl:top-20">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">New choice</p>
+            <h2 className="mt-1 text-lg font-bold">Add a department</h2>
+            <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">The code is a short label, such as MGMT. It has to be unique.</p>
+            <ActionForm action={createDepartment} submitLabel="Add department">
+              <Field label="Name"><Input name="name" required maxLength={80} /></Field>
+              <Field label="Code"><Input name="code" required maxLength={12} placeholder="MARTECH" /></Field>
+            </ActionForm>
+          </Card>
+        </div>
+      </section>
 
       <section id="roles" className="space-y-3">
         <h2 className="text-lg font-bold">Roles and capabilities</h2>
@@ -95,6 +149,13 @@ export default async function AdminPage() {
                     <span className="text-xs font-semibold text-muted">{role.key}</span>
                   </div>
                   {role.description ? <p className="mt-1 text-sm text-secondary">{role.description}</p> : null}
+                  <div className="mt-3 border-t border-border pt-3">
+                    <ActionForm action={updateRoleLabel} submitLabel="Save role label">
+                      <input type="hidden" name="id" value={role.id} />
+                      <Field label="Display name"><Input name="name" defaultValue={role.name} required /></Field>
+                      <Field label="Description"><Textarea name="description" defaultValue={role.description ?? ""} /></Field>
+                    </ActionForm>
+                  </div>
                   {caps.length === 0 ? (
                     <p className="mt-3 text-sm text-secondary">No capabilities stored on this role.</p>
                   ) : (
@@ -128,6 +189,11 @@ export default async function AdminPage() {
                   <p className="text-sm font-bold">{setting.key}</p>
                   <p className="mt-2 max-h-32 overflow-y-auto whitespace-pre-wrap break-all rounded-[12px] bg-canvas px-3 py-2 text-sm text-secondary">{settingText(setting.value)}</p>
                   <p className="mt-2 text-xs text-muted">Updated {formatDateTime(setting.updatedAt)}</p>
+                  <div className="mt-3">
+                    <ActionForm action={deleteSetting} submitLabel="Delete setting">
+                      <input type="hidden" name="key" value={setting.key} />
+                    </ActionForm>
+                  </div>
                 </article>
               ))}
             </div>
@@ -169,6 +235,13 @@ export default async function AdminPage() {
                   </p>
                   {invite.expiresAt ? <p className="mt-1 text-xs text-secondary">Expires {formatDateTime(invite.expiresAt)}</p> : null}
                   {person ? <Link href={`/team/${person.id}`} className="mt-2 inline-block text-xs font-semibold text-info">{person.fullName}</Link> : null}
+                  {invite.status === "pending" ? (
+                    <div className="mt-3">
+                      <ActionForm action={cancelInvitation} submitLabel="Cancel invitation">
+                        <input type="hidden" name="id" value={invite.id} />
+                      </ActionForm>
+                    </div>
+                  ) : null}
                 </article>
               );
             })}

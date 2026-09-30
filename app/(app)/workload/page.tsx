@@ -2,20 +2,18 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { AlertTriangle, Clock, ListChecks, Users } from "lucide-react";
 import { getAuthContext } from "@/lib/auth/context";
-import { listPeople, listTasks, listTime } from "@/lib/queries";
+import { isDirectoryPerson, listPeople, listTasks, listTime } from "@/lib/queries";
 import { PersonAvatar } from "@/components/person-avatar";
 import { EmptyState } from "@/components/ui";
 import { RecordList } from "@/components/list-controls";
 import { Metric, ViewPills, WorkHero, linkButton } from "@/components/work-surface";
 import { isTaskOverdue } from "@/lib/permissions";
-import { readableLabel } from "@/lib/utils";
-
 export default async function WorkloadPage({ searchParams }: { searchParams: Promise<{ view?: string }> }) {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
   const { view = "all" } = await searchParams;
   const [peopleRows, tasks, time] = await Promise.all([listPeople(), listTasks(), listTime()]);
-  const rows = peopleRows.map((person) => {
+  const rows = peopleRows.filter(isDirectoryPerson).map((person) => {
     const assigned = tasks.filter((task) => task.assigneeId === person.id && task.status !== "completed");
     const overdue = assigned.filter((task) => isTaskOverdue(task));
     const minutes = time.filter((entry) => entry.personId === person.id);
@@ -80,7 +78,7 @@ export default async function WorkloadPage({ searchParams }: { searchParams: Pro
                 <PersonAvatar personId={row.person.id} name={row.person.fullName} hasPhoto={Boolean(row.person.photoStorageKey)} version={row.person.updatedAt.getTime()} size="sm" />
                 <div className="min-w-0">
                   <Link href={`/team/${row.person.id}`} className="block truncate text-base font-bold text-text hover:text-primary">{row.person.fullName}</Link>
-                  <p className="text-xs text-secondary">{row.person.positionTitle ? readableLabel(row.person.positionTitle) : "No position title"}</p>
+                  <p className="text-xs text-secondary">{row.person.positionTitle?.trim() || "No position title"}</p>
                 </div>
               </div>
               <dl className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">

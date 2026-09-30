@@ -1,11 +1,10 @@
 import Link from "next/link";
 import { PersonAvatar } from "@/components/person-avatar";
-import { readableLabel } from "@/lib/utils";
-
 export type OrgPerson = {
   id: string;
   fullName: string;
   positionTitle: string | null;
+  departmentName: string | null;
   photoStorageKey: string | null;
   updatedAt: Date;
 };
@@ -105,7 +104,8 @@ function OrgCard({ person, superiorNames }: { person: OrgPerson; superiorNames: 
     <Link href={`/team/${person.id}`} className="flex w-44 shrink-0 flex-col items-center rounded-[16px] border border-border bg-canvas px-3 py-3 text-center shadow-[var(--shadow-card)] hover:border-pink">
       <PersonAvatar personId={person.id} name={person.fullName} hasPhoto={Boolean(person.photoStorageKey)} version={person.updatedAt.getTime()} size="sm" />
       <span className="mt-2 line-clamp-2 text-sm font-bold text-text">{person.fullName}</span>
-      <span className="mt-0.5 line-clamp-2 text-[11px] text-secondary">{person.positionTitle ? readableLabel(person.positionTitle) : "No position title"}</span>
+      <span className="mt-0.5 line-clamp-2 text-[11px] text-secondary">{person.positionTitle?.trim() || "No position title"}</span>
+      <span className="mt-0.5 line-clamp-2 text-[11px] font-semibold text-charcoal">{person.departmentName?.trim() || "No department"}</span>
       {superiorNames.length > 0 ? <span className="mt-1 line-clamp-2 text-[11px] font-semibold text-pink">Reports to {superiorNames.join(", ")}</span> : null}
     </Link>
   );

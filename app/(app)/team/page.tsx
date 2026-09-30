@@ -5,7 +5,7 @@ import { GitFork, UserPlus, Users } from "lucide-react";
 import { db } from "@/lib/db";
 import { reportingRelationships, roles } from "@/lib/db/schema";
 import { setReporting } from "@/lib/actions/core";
-import { listPeople } from "@/lib/queries";
+import { isDirectoryPerson, listPeople } from "@/lib/queries";
 import { getAuthContext, hasPermission } from "@/lib/auth/context";
 import { CreateMemberForm } from "./create-member-form";
 import { OrgChart } from "@/components/org-chart";
@@ -15,6 +15,7 @@ import { Badge, Card, EmptyState, Field, Select, statusTone } from "@/components
 import { RecordList } from "@/components/list-controls";
 import { Metric, ViewPills, WorkHero, linkButton } from "@/components/work-surface";
 import { readableLabel } from "@/lib/utils";
+import { loadDepartments } from "@/lib/services/departments";
 
 export default async function TeamPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const ctx = await getAuthContext();
@@ -22,11 +23,13 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
   const { status = "all" } = await searchParams;
   const canInvite = hasPermission(ctx, "user:invite");
   const canEditTeam = hasPermission(ctx, "team:edit");
-  const [peopleRows, reportingRows, roleRows] = await Promise.all([
-    listPeople(),
+  const [peopleRows, reportingRows, roleRows, departmentData] = await Promise.all([
+    listPeople().then((rows) => rows.filter(isDirectoryPerson)),
     db.select().from(reportingRelationships).where(eq(reportingRelationships.status, "active")),
     db.select().from(roles),
+    loadDepartments(),
   ]);
+  const activeDepartments = departmentData.departments.filter((department) => department.status === "active");
   const visibleIds = new Set(peopleRows.map((person) => person.id));
   const reporting = reportingRows.filter((row) => visibleIds.has(row.personId) && visibleIds.has(row.superiorId));
   const active = peopleRows.filter((person) => person.organizationalStatus === "active").length;
@@ -66,6 +69,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
             id: person.id,
             fullName: person.fullName,
             positionTitle: person.positionTitle,
+            departmentName: departmentData.byPerson.get(person.id)?.name ?? null,
             photoStorageKey: person.photoStorageKey,
             updatedAt: person.updatedAt,
           }))}
@@ -96,7 +100,7 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                   <article
                     key={person.id}
                     data-record=""
-                    data-label-text={`${person.fullName} ${person.username ?? ""} ${person.positionTitle ?? ""} ${person.employmentType} ${person.organizationalStatus}`}
+                    data-label-text={`${person.fullName} ${person.username ?? ""} ${person.positionTitle ?? ""} ${departmentData.byPerson.get(person.id)?.name ?? ""} ${person.employmentType} ${person.organizationalStatus}`}
                     className="rounded-[18px] border border-border bg-surface px-4 py-3.5 shadow-[var(--shadow-card)]"
                   >
                     <Link href={`/team/${person.id}`} className="flex items-start gap-3">
@@ -108,7 +112,9 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
                           {person.isDemo ? <Badge tone="yellow">Demo</Badge> : null}
                         </span>
                         <span className="mt-1 block text-xs text-secondary">
-                          {person.positionTitle ? readableLabel(person.positionTitle) : "No position title"}
+                          {person.positionTitle?.trim() || "No position title"}
+                          {" · "}
+                          {departmentData.byPerson.get(person.id)?.name ?? "No department"}
                           {" · "}
                           {readableLabel(person.employmentType)}
                           {person.username ? ` · ${person.username}` : ""}
@@ -127,8 +133,11 @@ export default async function TeamPage({ searchParams }: { searchParams: Promise
             <Card id="create-account">
               <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Account</p>
               <h2 className="mt-1 text-lg font-bold">Create account</h2>
-              <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">Email and username both sign in. The first password is temporary and must be replaced.</p>
-              <CreateMemberForm roles={roleRows.map((role) => ({ id: role.id, key: role.key, name: role.name }))} />
+              <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">An email or a username is enough to sign in. The one left blank can be added later on the profile. The first password is temporary and must be replaced.</p>
+              <CreateMemberForm
+                roles={roleRows.map((role) => ({ id: role.id, key: role.key, name: role.name }))}
+                departments={activeDepartments.map((department) => ({ id: department.id, name: department.name }))}
+              />
             </Card>
           ) : (
             <Card>

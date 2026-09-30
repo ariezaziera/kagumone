@@ -300,15 +300,19 @@ async function main() {
   }
   await db.insert(rolePermissions).values(links);
 
-  const deptId = newId();
-  await db.insert(departments).values({
-    id: deptId,
-    name: "Operations",
-    code: "OPS",
+  const departmentRows = [
+    { name: "Management", code: "MGMT" },
+    { name: "Marketing Technologist (MarTech)", code: "MARTECH" },
+    { name: "Admin", code: "ADMIN" },
+  ].map((department) => ({
+    id: newId(),
+    ...department,
     status: "active",
     createdAt: now(),
     updatedAt: now(),
-  });
+  }));
+  await db.insert(departments).values(departmentRows);
+  const deptId = departmentRows[0].id;
 
   const seedAuth = createSignupAuth();
 

@@ -190,7 +190,7 @@ export default async function HandoverPage({ searchParams }: { searchParams: Pro
           <h2 className="mt-1 text-lg font-bold">Start a handover</h2>
           <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">Pending work, the project update, how to continue, then the links, folders, and files. Open tasks stay on their own records.</p>
           <HandoverForm
-            people={peopleRows.map((person) => ({ id: person.id, fullName: person.fullName }))}
+            people={peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => ({ id: person.id, fullName: person.fullName }))}
             projects={projects.map((project) => ({ id: project.id, name: project.name }))}
           />
         </Card>

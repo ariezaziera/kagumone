@@ -2,10 +2,12 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { and, eq } from "drizzle-orm";
 import { BookOpen, ListChecks, Users } from "lucide-react";
-import { getAuthContext } from "@/lib/auth/context";
+import { getAuthContext, hasPermission } from "@/lib/auth/context";
+import { visibleSignInEmail } from "@/lib/auth/pending-email";
 import { listPeople, listProjects, listTasks } from "@/lib/queries";
 import { db } from "@/lib/db";
 import { personSkills, reportingRelationships, skillEvidence, skills } from "@/lib/db/schema";
+import { loadDepartments } from "@/lib/services/departments";
 import { Badge, Card, EmptyState } from "@/components/ui";
 import { RecordList } from "@/components/list-controls";
 import { PersonAvatar } from "@/components/person-avatar";
@@ -29,7 +31,7 @@ export default async function ProfilePage() {
   if (!ctx) redirect("/login");
   const person = ctx.person;
   await inferSkillsForPerson(person.id);
-  const [mine, projects, assigned, skillRows, evidence, reporting, directory] = await Promise.all([
+  const [mine, projects, assigned, skillRows, evidence, reporting, directory, departmentData] = await Promise.all([
     listTasks().then((rows) => rows.filter((task) => task.assigneeId === person.id && task.status !== "completed")),
     listProjects(),
     db.select().from(personSkills).where(eq(personSkills.personId, person.id)),
@@ -37,7 +39,11 @@ export default async function ProfilePage() {
     db.select().from(skillEvidence),
     db.select().from(reportingRelationships).where(and(eq(reportingRelationships.personId, person.id), eq(reportingRelationships.status, "active"))),
     listPeople(),
+    loadDepartments(),
   ]);
+  const department = departmentData.byPerson.get(person.id) ?? null;
+  const canManage = hasPermission(ctx, "administration:manage");
+  const departmentOptions = departmentData.departments.filter((row) => row.status === "active" || row.id === department?.id);
   const directoryById = new Map(directory.map((row) => [row.id, row]));
   const projectName = new Map(projects.map((row) => [row.id, row.name]));
   const superiors = reporting
@@ -59,7 +65,7 @@ export default async function ProfilePage() {
         kicker="My profile"
         title={person.fullName}
         artWash="bg-pink-soft"
-        description={person.preferredName ? `Goes by ${person.preferredName}. Photo, name, and preferred name are yours to update.` : "Photo, name, and preferred name are yours to update."}
+        description={person.preferredName ? `Goes by ${person.preferredName}. Photo, name, preferred name, and any sign-in left blank can be updated here.` : "Photo, name, preferred name, and any sign-in left blank can be updated here."}
         actions={
           <>
             <a className={linkButton("primary")} href="#edit-profile">Edit profile</a>
@@ -82,7 +88,7 @@ export default async function ProfilePage() {
             {person.preferredName ? <p className="mt-1 text-sm text-secondary">Full name {person.fullName}</p> : null}
             <div className="mt-3 flex flex-wrap gap-2">
               <Badge tone="neutral">{readableLabel(person.organizationalStatus)}</Badge>
-              {person.positionTitle ? <Badge tone="pink">{readableLabel(person.positionTitle)}</Badge> : null}
+              {person.positionTitle ? <Badge tone="pink">{person.positionTitle}</Badge> : null}
               {ctx.roleKeys.map((role) => (
                 <Badge key={role}>{readableLabel(role)}</Badge>
               ))}
@@ -92,11 +98,15 @@ export default async function ProfilePage() {
         <dl className="grid gap-px bg-border sm:grid-cols-2 lg:grid-cols-3">
           <div className="bg-surface px-5 py-4">
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Email</dt>
-            <dd className="mt-1 break-all text-sm font-semibold">{person.email}</dd>
+            <dd className="mt-1 break-all text-sm font-semibold">{visibleSignInEmail(person.email) ?? "Not set yet"}</dd>
           </div>
           <div className="bg-surface px-5 py-4">
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Username</dt>
-            <dd className="mt-1 text-sm font-semibold">{person.username ?? "—"}</dd>
+            <dd className="mt-1 text-sm font-semibold">{person.username ?? "Not set yet"}</dd>
+          </div>
+          <div className="bg-surface px-5 py-4">
+            <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Department</dt>
+            <dd className="mt-1 text-sm font-semibold">{department?.name ?? "No department"}</dd>
           </div>
           <div className="bg-surface px-5 py-4">
             <dt className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Employment</dt>
@@ -151,13 +161,20 @@ export default async function ProfilePage() {
         <Card id="edit-profile" accent="pink" className="xl:sticky xl:top-20">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-muted">Yours to edit</p>
           <h2 className="mt-1 text-lg font-bold">Edit profile</h2>
-          <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">Photo, name, and preferred name. Someone who manages administration, or a direct superior, can save these too.</p>
+          <p className="mb-4 mt-1 text-xs leading-relaxed text-secondary">Photo, name, preferred name, and position title. An email or username left blank can be added here. Someone who manages administration can edit the whole profile.</p>
           <ProfileForm
             person={{
               id: person.id,
               fullName: person.fullName,
               preferredName: person.preferredName,
               hasPhoto: Boolean(person.photoStorageKey),
+              email: visibleSignInEmail(person.email),
+              username: person.username,
+              positionTitle: person.positionTitle,
+              canEditSignIn: canManage,
+              canEditDepartment: canManage,
+              departmentId: department?.id ?? null,
+              departments: departmentOptions.map((row) => ({ id: row.id, name: row.name })),
             }}
           />
         </Card>

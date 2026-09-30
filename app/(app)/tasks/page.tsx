@@ -158,7 +158,7 @@ export default async function TasksPage({ searchParams }: { searchParams: Promis
                 <Field label="Assignee">
                   <Select name="assigneeId">
                     <option value="">Draft (unassigned)</option>
-                    {peopleRows.map((person) => (
+                    {peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => (
                       <option key={person.id} value={person.id}>
                         {person.fullName}
                       </option>

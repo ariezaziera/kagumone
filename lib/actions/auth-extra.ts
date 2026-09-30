@@ -14,6 +14,7 @@ import { getAuthContext, requirePermission } from "@/lib/auth/context";
 import { temporaryPassword } from "@/lib/auth/temporary-password";
 import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import { listActivity, listContents, listKnowledge, listPeople, listProjects, listTasks } from "@/lib/queries";
+import { visibleSignInEmail } from "@/lib/auth/pending-email";
 import { createSignupAuth } from "@/lib/auth/signup";
 
 export async function signInWithIdentifier(input: { identifier: string; password: string; remember: boolean }) {
@@ -108,7 +109,7 @@ export async function resetAccountPassword(form: FormData) {
   revalidatePath(`/team/${person.id}`);
   return {
     fullName: person.fullName,
-    email: person.email,
+    email: visibleSignInEmail(person.email),
     username: person.username,
     temporaryPassword: password,
   };
@@ -200,7 +201,7 @@ export async function searchRecords(term: string) {
   const [projectRows, taskRows, peopleRows, contentRows] = await Promise.all([
     listProjects().then((rows) => rows.filter((row) => row.name.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
     listTasks().then((rows) => rows.filter((row) => row.title.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
-    listPeople().then((rows) => rows.filter((row) => row.fullName.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
+    listPeople().then((rows) => rows.filter((row) => row.organizationalStatus !== "deleted" && row.fullName.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
     listContents().then((rows) => rows.filter((row) => row.title.toLowerCase().includes(term.trim().toLowerCase())).slice(0, 5)),
   ]);
   return { projectRows, taskRows, peopleRows, contentRows };

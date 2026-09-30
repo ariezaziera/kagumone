@@ -1,6 +1,8 @@
 "use server";
 
-import { and, desc, eq, isNull } from "drizzle-orm";
+import { and, desc, eq, isNull, or } from "drizzle-orm";
+import { redirect } from "next/navigation";
+import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import {
@@ -21,6 +23,9 @@ import {
   kpiTargets,
   people,
   personRoles,
+  departments,
+  personDepartments,
+  invitations,
   plannedWork,
   projectHistory,
   projectMembers,
@@ -37,6 +42,8 @@ import {
   tasks,
   employmentHistory,
   user as authUser,
+  session,
+  account,
 } from "@/lib/db/schema";
 import { canEditProfile, getAuthContext, requirePermission, hasPermission } from "@/lib/auth/context";
 import { recordActivity, recordAudit, notify } from "@/lib/services/records";
@@ -44,10 +51,12 @@ import { assertMaxThreeSuperiors, cannotDeleteSelf, deriveEquipmentStatus } from
 import { inferSkillsFromRecentWork } from "@/lib/services/skills";
 import { canTransitionTask, overdueDays, type TaskStatus } from "@/lib/permissions";
 import { newId, now, readableLabel } from "@/lib/utils";
+import { isPendingSignInEmail, pendingSignInEmail, visibleSignInEmail } from "@/lib/auth/pending-email";
 import { createSignupAuth } from "@/lib/auth/signup";
 import { temporaryPassword } from "@/lib/auth/temporary-password";
 import { storeFile } from "@/lib/integrations/storage";
 import { hideDemoWorkspace } from "@/lib/services/demo-scope";
+import { setPrimaryDepartment } from "@/lib/services/departments";
 import {
   borrowSchema,
   completionSchema,
@@ -56,6 +65,10 @@ import {
   inviteSchema,
   handoverSchema,
   profileSchema,
+  usernameSchema,
+  departmentSchema,
+  departmentUpdateSchema,
+  roleUpdateSchema,
   plannedWorkSchema,
   projectSchema,
   taskSchema,
@@ -912,6 +925,20 @@ export async function upsertKpiTarget(form: FormData) {
 
 const PROFILE_PHOTO_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/gif"]);
 
+async function signInEmailInUse(email: string, except?: { personId: string; userId: string | null }) {
+  const [authRow] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.email, email));
+  if (authRow && authRow.id !== except?.userId) return true;
+  const [personRow] = await db.select({ id: people.id }).from(people).where(eq(people.email, email));
+  return Boolean(personRow && personRow.id !== except?.personId);
+}
+
+async function signInUsernameInUse(username: string, except?: { personId: string; userId: string | null }) {
+  const [authRow] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.username, username));
+  if (authRow && authRow.id !== except?.userId) return true;
+  const [personRow] = await db.select({ id: people.id }).from(people).where(eq(people.username, username));
+  return Boolean(personRow && personRow.id !== except?.personId);
+}
+
 export async function updateProfile(form: FormData) {
   const ctx = await getAuthContext();
   if (!ctx) throw new Error("You must be signed in.");
@@ -920,6 +947,8 @@ export async function updateProfile(form: FormData) {
     personId: form.get("personId"),
     fullName: form.get("fullName"),
     preferredName: String(form.get("preferredName") ?? ""),
+    positionTitle: String(form.get("positionTitle") ?? ""),
+    departmentId: String(form.get("departmentId") ?? ""),
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the profile details.");
   if (!canEditProfile(ctx, parsed.data.personId)) throw new Error("You are not authorized to edit this profile.");
@@ -948,28 +977,110 @@ export async function updateProfile(form: FormData) {
 
   const preferredName = parsed.data.preferredName?.trim() ? parsed.data.preferredName.trim() : null;
   const nameChanged = person.fullName !== parsed.data.fullName || (person.preferredName ?? null) !== preferredName;
-  if (!nameChanged && !photoChanged) return;
+  const positionTitle = parsed.data.positionTitle?.trim() ? parsed.data.positionTitle.trim() : null;
+  const titleChanged = (person.positionTitle ?? null) !== positionTitle;
+  const canManage = hasPermission(ctx, "administration:manage");
+  if (canManage) {
+    await setPrimaryDepartment(person.id, parsed.data.departmentId?.trim() || null);
+  }
+  const emailMissing = isPendingSignInEmail(person.email);
+  const usernameMissing = !person.username;
+  const submittedEmail = String(form.get("email") ?? "").trim().toLowerCase();
+  const submittedUsername = String(form.get("username") ?? "").trim();
+  const except = { personId: person.id, userId: person.userId };
+  const currentEmail = visibleSignInEmail(person.email);
+  let emailToSet: string | null = null;
+  let clearEmail = false;
+  let usernameToSet: string | null = null;
+  let clearUsername = false;
+  if (canManage) {
+    if (submittedEmail && submittedEmail !== (currentEmail ?? "").toLowerCase()) {
+      if (!z.string().email().safeParse(submittedEmail).success || isPendingSignInEmail(submittedEmail)) {
+        throw new Error("Enter a valid email.");
+      }
+      if (await signInEmailInUse(submittedEmail, except)) throw new Error("That email is already in use.");
+      emailToSet = submittedEmail;
+    } else if (!submittedEmail && currentEmail) {
+      clearEmail = true;
+    }
+    if (submittedUsername && submittedUsername.toLowerCase() !== (person.username ?? "").toLowerCase()) {
+      const parsedUsername = usernameSchema.safeParse(submittedUsername);
+      if (!parsedUsername.success) throw new Error(parsedUsername.error.issues[0]?.message ?? "Check the username.");
+      usernameToSet = parsedUsername.data.toLowerCase();
+      if (await signInUsernameInUse(usernameToSet, except)) throw new Error("That username is already in use.");
+    } else if (!submittedUsername && person.username) {
+      clearUsername = true;
+    }
+    const emailRemains = Boolean(emailToSet) || (!clearEmail && Boolean(currentEmail));
+    const usernameRemains = Boolean(usernameToSet) || (!clearUsername && Boolean(person.username));
+    if (!emailRemains && !usernameRemains) throw new Error("Keep an email or a username so the account can sign in.");
+  } else {
+    if (emailMissing && submittedEmail) {
+      if (!z.string().email().safeParse(submittedEmail).success || isPendingSignInEmail(submittedEmail)) {
+        throw new Error("Enter a valid email.");
+      }
+      if (await signInEmailInUse(submittedEmail, except)) throw new Error("That email is already in use.");
+      emailToSet = submittedEmail;
+    }
+    if (usernameMissing && submittedUsername) {
+      const parsedUsername = usernameSchema.safeParse(submittedUsername);
+      if (!parsedUsername.success) throw new Error(parsedUsername.error.issues[0]?.message ?? "Check the username.");
+      usernameToSet = parsedUsername.data.toLowerCase();
+      if (await signInUsernameInUse(usernameToSet, except)) throw new Error("That username is already in use.");
+    }
+  }
+  const replacementEmail = clearEmail ? pendingSignInEmail() : null;
+  if (!nameChanged && !photoChanged && !titleChanged && !emailToSet && !usernameToSet && !clearEmail && !clearUsername) return;
 
   await db
     .update(people)
     .set({
       fullName: parsed.data.fullName,
       preferredName,
+      positionTitle,
       photoStorageKey,
       photoMimeType,
+      ...(emailToSet ? { email: emailToSet } : {}),
+      ...(replacementEmail ? { email: replacementEmail } : {}),
+      ...(usernameToSet ? { username: usernameToSet } : {}),
+      ...(clearUsername ? { username: null } : {}),
       updatedAt: now(),
     })
     .where(eq(people.id, person.id));
-  if (person.userId && person.fullName !== parsed.data.fullName) {
-    await db.update(authUser).set({ name: parsed.data.fullName, updatedAt: now() }).where(eq(authUser.id, person.userId));
+  if (person.userId && (person.fullName !== parsed.data.fullName || emailToSet || usernameToSet || clearEmail || clearUsername)) {
+    await db
+      .update(authUser)
+      .set({
+        ...(person.fullName !== parsed.data.fullName ? { name: parsed.data.fullName } : {}),
+        ...(emailToSet ? { email: emailToSet } : {}),
+        ...(replacementEmail ? { email: replacementEmail } : {}),
+        ...(usernameToSet ? { username: usernameToSet } : {}),
+        ...(clearUsername ? { username: null } : {}),
+        updatedAt: now(),
+      })
+      .where(eq(authUser.id, person.userId));
   }
   await recordAudit({
     actorId: ctx.person.id,
     action: "profile.updated",
     entityType: "person",
     entityId: person.id,
-    previousValue: { fullName: person.fullName, preferredName: person.preferredName, hasPhoto: Boolean(person.photoStorageKey) },
-    newValue: { fullName: parsed.data.fullName, preferredName, hasPhoto: Boolean(photoStorageKey) },
+    previousValue: {
+      fullName: person.fullName,
+      preferredName: person.preferredName,
+      hasPhoto: Boolean(person.photoStorageKey),
+      email: visibleSignInEmail(person.email),
+      username: person.username,
+      positionTitle: person.positionTitle,
+    },
+    newValue: {
+      fullName: parsed.data.fullName,
+      preferredName,
+      hasPhoto: Boolean(photoStorageKey),
+      email: emailToSet ?? (clearEmail ? null : visibleSignInEmail(person.email)),
+      username: clearUsername ? null : usernameToSet ?? person.username,
+      positionTitle,
+    },
   });
   await recordActivity({
     actorId: ctx.person.id,
@@ -995,31 +1106,34 @@ export async function updateProfile(form: FormData) {
 
 export async function inviteUser(form: FormData) {
   const ctx = requirePermission(await getAuthContext(), "user:invite");
+  const blank = (value: FormDataEntryValue | null) => {
+    const text = String(value ?? "").trim();
+    return text || undefined;
+  };
   const parsed = inviteSchema.safeParse({
-    email: form.get("email"),
+    email: blank(form.get("email")),
     fullName: form.get("fullName"),
-    username: form.get("username"),
+    username: blank(form.get("username")),
+    positionTitle: blank(form.get("positionTitle")),
     roleKey: form.get("roleKey"),
+    departmentId: form.get("departmentId"),
   });
   if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the account details.");
-  const email = parsed.data.email.toLowerCase();
-  const username = parsed.data.username.toLowerCase();
+  const email = parsed.data.email?.toLowerCase();
+  const username = parsed.data.username?.toLowerCase();
   const role = await db.query.roles.findFirst({ where: eq(roles.key, parsed.data.roleKey) });
   if (!role) throw new Error("Choose a role.");
-  const [emailTaken] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.email, email));
-  const [usernameTaken] = await db.select({ id: authUser.id }).from(authUser).where(eq(authUser.username, username));
-  const [personEmailTaken] = await db.select({ id: people.id }).from(people).where(eq(people.email, email));
-  const [personUsernameTaken] = await db.select({ id: people.id }).from(people).where(eq(people.username, username));
-  if (emailTaken || personEmailTaken) throw new Error("That email is already in use.");
-  if (usernameTaken || personUsernameTaken) throw new Error("That username is already in use.");
+  if (email && (await signInEmailInUse(email))) throw new Error("That email is already in use.");
+  if (username && (await signInUsernameInUse(username))) throw new Error("That username is already in use.");
 
   const password = temporaryPassword();
+  const authEmail = email ?? pendingSignInEmail();
   const signed = await createSignupAuth().api.signUpEmail({
     body: {
-      email,
+      email: authEmail,
       password,
       name: parsed.data.fullName,
-      username,
+      ...(username ? { username } : {}),
     },
   });
   const personId = newId();
@@ -1036,8 +1150,9 @@ export async function inviteUser(form: FormData) {
       id: personId,
       userId: signed.user.id,
       fullName: parsed.data.fullName,
-      email,
-      username,
+      email: authEmail,
+      username: username ?? null,
+      positionTitle: parsed.data.positionTitle?.trim() || null,
       employmentType,
       organizationalStatus: "active",
       mustChangePassword: true,
@@ -1046,6 +1161,7 @@ export async function inviteUser(form: FormData) {
       updatedAt: now(),
     });
     await db.insert(personRoles).values({ id: newId(), personId, roleId: role.id, createdAt: now() });
+    await setPrimaryDepartment(personId, parsed.data.departmentId);
   } catch (error) {
     await db.delete(authUser).where(eq(authUser.id, signed.user.id));
     throw error;
@@ -1055,7 +1171,7 @@ export async function inviteUser(form: FormData) {
     action: "user.created",
     entityType: "person",
     entityId: personId,
-    newValue: { email, username, roleKey: role.key },
+    newValue: { email: email ?? null, username: username ?? null, roleKey: role.key, departmentId: parsed.data.departmentId },
   });
   await recordActivity({
     actorId: ctx.person.id,
@@ -1068,8 +1184,8 @@ export async function inviteUser(form: FormData) {
   revalidatePath("/admin");
   return {
     fullName: parsed.data.fullName,
-    email,
-    username,
+    email: email ?? null,
+    username: username ?? null,
     temporaryPassword: password,
   };
 }
@@ -1145,6 +1261,75 @@ export async function deactivatePerson(form: FormData) {
     entityId: personId,
   });
   revalidatePath("/team");
+}
+
+export async function deletePerson(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "team:delete");
+  const personId = String(form.get("personId"));
+  cannotDeleteSelf(ctx.person.id, personId);
+  const reason = z.string().trim().max(500).parse(String(form.get("reason") || "")) || "Account deleted";
+  const [person] = await db.select().from(people).where(eq(people.id, personId));
+  if (!person) throw new Error("That person is not in the directory.");
+  if (person.organizationalStatus === "deleted") throw new Error("This account is already deleted.");
+
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "person.deleted",
+    entityType: "person",
+    entityId: personId,
+    previousValue: {
+      fullName: person.fullName,
+      email: visibleSignInEmail(person.email),
+      username: person.username,
+      organizationalStatus: person.organizationalStatus,
+    },
+    newValue: { organizationalStatus: "deleted", reason },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "person.deleted",
+    entityType: "person",
+    entityId: personId,
+    summary: `${ctx.person.fullName} deleted the account for ${person.fullName}. Work records stay. Reason: ${reason}`,
+  });
+
+  const loginId = person.userId;
+  await db
+    .update(people)
+    .set({
+      userId: null,
+      username: null,
+      email: pendingSignInEmail(),
+      organizationalStatus: "deleted",
+      updatedAt: now(),
+    })
+    .where(eq(people.id, personId));
+  if (loginId) {
+    await db.delete(session).where(eq(session.userId, loginId));
+    await db.delete(account).where(eq(account.userId, loginId));
+    await db.delete(authUser).where(eq(authUser.id, loginId));
+  }
+  await db
+    .update(reportingRelationships)
+    .set({ status: "ended", endedAt: now() })
+    .where(
+      and(
+        eq(reportingRelationships.status, "active"),
+        or(eq(reportingRelationships.personId, personId), eq(reportingRelationships.superiorId, personId)),
+      ),
+    );
+  await db.insert(employmentHistory).values({
+    id: newId(),
+    personId,
+    status: "deleted",
+    changedById: ctx.person.id,
+    reason,
+    createdAt: now(),
+  });
+
+  revalidatePath("/team");
+  revalidatePath(`/team/${personId}`);
+  redirect("/team");
 }
 
 function parseHandoverRefs(value: FormDataEntryValue | null) {
@@ -1351,6 +1536,178 @@ export async function markNotificationsRead() {
   const { notifications } = await import("@/lib/db/schema");
   await db.update(notifications).set({ readAt: now() }).where(and(eq(notifications.personId, ctx.person.id), isNull(notifications.readAt)));
   revalidatePath("/notifications");
+}
+
+export async function createDepartment(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const parsed = departmentSchema.safeParse({ name: form.get("name"), code: form.get("code") });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the department.");
+  const [taken] = await db.select({ id: departments.id }).from(departments).where(eq(departments.code, parsed.data.code));
+  if (taken) throw new Error("That department code is already used.");
+  const id = newId();
+  await db.insert(departments).values({
+    id,
+    name: parsed.data.name,
+    code: parsed.data.code,
+    status: "active",
+    createdAt: now(),
+    updatedAt: now(),
+  });
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "department.created",
+    entityType: "department",
+    entityId: id,
+    newValue: parsed.data,
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "department.created",
+    entityType: "department",
+    entityId: id,
+    summary: `${ctx.person.fullName} added the department ${parsed.data.name}.`,
+  });
+  revalidateMany(["/admin", "/team", "/profile"]);
+}
+
+export async function updateDepartment(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const parsed = departmentUpdateSchema.safeParse({
+    id: form.get("id"),
+    name: form.get("name"),
+    code: form.get("code"),
+    status: form.get("status"),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the department.");
+  const [current] = await db.select().from(departments).where(eq(departments.id, parsed.data.id));
+  if (!current) throw new Error("That department is not in the list.");
+  const [taken] = await db.select({ id: departments.id }).from(departments).where(eq(departments.code, parsed.data.code));
+  if (taken && taken.id !== current.id) throw new Error("That department code is already used.");
+  await db
+    .update(departments)
+    .set({ name: parsed.data.name, code: parsed.data.code, status: parsed.data.status, updatedAt: now() })
+    .where(eq(departments.id, current.id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "department.updated",
+    entityType: "department",
+    entityId: current.id,
+    previousValue: { name: current.name, code: current.code, status: current.status },
+    newValue: parsed.data,
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "department.updated",
+    entityType: "department",
+    entityId: current.id,
+    summary: `${ctx.person.fullName} updated the department ${parsed.data.name}.`,
+  });
+  revalidateMany(["/admin", "/team", "/profile"]);
+}
+
+export async function deleteDepartment(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const id = String(form.get("id") || "");
+  const [current] = await db.select().from(departments).where(eq(departments.id, id));
+  if (!current) throw new Error("That department is not in the list.");
+  const members = await db.select({ id: personDepartments.id }).from(personDepartments).where(eq(personDepartments.departmentId, id));
+  if (members.length > 0) {
+    throw new Error("People are still in this department. Set it to inactive instead of deleting it.");
+  }
+  await db.delete(departments).where(eq(departments.id, id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "department.deleted",
+    entityType: "department",
+    entityId: id,
+    previousValue: { name: current.name, code: current.code },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "department.deleted",
+    entityType: "department",
+    entityId: id,
+    summary: `${ctx.person.fullName} deleted the department ${current.name}.`,
+  });
+  revalidateMany(["/admin", "/team", "/profile"]);
+}
+
+export async function updateRoleLabel(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const parsed = roleUpdateSchema.safeParse({
+    id: form.get("id"),
+    name: form.get("name"),
+    description: String(form.get("description") ?? ""),
+  });
+  if (!parsed.success) throw new Error(parsed.error.issues[0]?.message ?? "Check the role.");
+  const [current] = await db.select().from(roles).where(eq(roles.id, parsed.data.id));
+  if (!current) throw new Error("That role is not in the list.");
+  const description = parsed.data.description?.trim() || null;
+  await db.update(roles).set({ name: parsed.data.name, description }).where(eq(roles.id, current.id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "role.updated",
+    entityType: "role",
+    entityId: current.id,
+    previousValue: { name: current.name, description: current.description },
+    newValue: { name: parsed.data.name, description },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "role.updated",
+    entityType: "role",
+    entityId: current.id,
+    summary: `${ctx.person.fullName} renamed the role ${current.name} to ${parsed.data.name}.`,
+  });
+  revalidateMany(["/admin", "/team"]);
+}
+
+export async function deleteSetting(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const key = String(form.get("key") || "").trim();
+  const existing = await db.query.settings.findFirst({ where: eq(settings.key, key) });
+  if (!existing) throw new Error("That setting is not stored.");
+  await db.delete(settings).where(eq(settings.id, existing.id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "settings.deleted",
+    entityType: "setting",
+    entityId: key,
+    previousValue: existing.value,
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "settings.deleted",
+    entityType: "setting",
+    entityId: key,
+    summary: `${ctx.person.fullName} deleted the setting ${key}.`,
+  });
+  revalidatePath("/admin");
+}
+
+export async function cancelInvitation(form: FormData) {
+  const ctx = requirePermission(await getAuthContext(), "administration:manage");
+  const id = String(form.get("id") || "");
+  const [invite] = await db.select().from(invitations).where(eq(invitations.id, id));
+  if (!invite) throw new Error("That invitation is not in the list.");
+  if (invite.status !== "pending") throw new Error("Only a pending invitation can be cancelled.");
+  await db.update(invitations).set({ status: "cancelled" }).where(eq(invitations.id, id));
+  await recordAudit({
+    actorId: ctx.person.id,
+    action: "invitation.cancelled",
+    entityType: "invitation",
+    entityId: id,
+    previousValue: { email: invite.email, status: invite.status },
+    newValue: { status: "cancelled" },
+  });
+  await recordActivity({
+    actorId: ctx.person.id,
+    action: "invitation.cancelled",
+    entityType: "invitation",
+    entityId: id,
+    summary: `${ctx.person.fullName} cancelled the invitation for ${invite.email}.`,
+  });
+  revalidatePath("/admin");
 }
 
 export async function saveSetting(form: FormData) {

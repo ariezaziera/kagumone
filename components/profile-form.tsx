@@ -3,12 +3,24 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { updateProfile } from "@/lib/actions/core";
-import { Button, Field, Input } from "@/components/ui";
+import { Button, Field, Input, Select } from "@/components/ui";
 
 export function ProfileForm({
   person,
 }: {
-  person: { id: string; fullName: string; preferredName: string | null; hasPhoto: boolean };
+  person: {
+    id: string;
+    fullName: string;
+    preferredName: string | null;
+    hasPhoto: boolean;
+    email: string | null;
+    username: string | null;
+    positionTitle: string | null;
+    canEditSignIn: boolean;
+    canEditDepartment: boolean;
+    departmentId: string | null;
+    departments: { id: string; name: string }[];
+  };
 }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
@@ -45,6 +57,29 @@ export function ProfileForm({
       <Field label="Preferred name">
         <Input name="preferredName" maxLength={80} defaultValue={person.preferredName ?? ""} />
       </Field>
+      <Field label="Position title">
+        <Input name="positionTitle" maxLength={80} defaultValue={person.positionTitle ?? ""} placeholder="Type the title" />
+      </Field>
+      {person.canEditDepartment ? (
+        <Field label="Department">
+          <Select name="departmentId" defaultValue={person.departmentId ?? ""}>
+            <option value="">No department</option>
+            {person.departments.map((department) => (
+              <option key={department.id} value={department.id}>{department.name}</option>
+            ))}
+          </Select>
+        </Field>
+      ) : null}
+      {person.canEditSignIn || !person.email ? (
+        <Field label="Email">
+          <Input name="email" type="email" autoComplete="off" defaultValue={person.email ?? ""} placeholder="Email for sign-in" />
+        </Field>
+      ) : null}
+      {person.canEditSignIn || !person.username ? (
+        <Field label="Username">
+          <Input name="username" minLength={3} maxLength={30} autoComplete="off" defaultValue={person.username ?? ""} placeholder="letters, numbers, underscores, periods" />
+        </Field>
+      ) : null}
       <Button type="submit">Save profile</Button>
       {error ? <p className="text-sm text-error">{error}</p> : null}
       {saved ? <p className="text-sm text-success">Saved.</p> : null}

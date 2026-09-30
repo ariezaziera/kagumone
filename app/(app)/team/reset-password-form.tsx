@@ -8,7 +8,7 @@ export function ResetPasswordForm({ personId }: { personId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<{
     fullName: string;
-    email: string;
+    email: string | null;
     username: string | null;
     temporaryPassword: string;
   } | null>(null);
@@ -42,11 +42,11 @@ export function ResetPasswordForm({ personId }: { personId: string }) {
           <dl className="mt-3 space-y-1">
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Email</dt>
-              <dd>{created.email}</dd>
+              <dd>{created.email ?? "Not set yet"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Username</dt>
-              <dd>{created.username ?? "—"}</dd>
+              <dd>{created.username ?? "Not set yet"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Temporary password</dt>
@@ -59,7 +59,7 @@ export function ResetPasswordForm({ personId }: { personId: string }) {
             variant="secondary"
             onClick={async () => {
               await navigator.clipboard.writeText(
-                `Email: ${created.email}\nUsername: ${created.username ?? ""}\nTemporary password: ${created.temporaryPassword}`,
+                `Email: ${created.email ?? "Not set yet"}\nUsername: ${created.username ?? "Not set yet"}\nTemporary password: ${created.temporaryPassword}`,
               );
               setCopied(true);
             }}

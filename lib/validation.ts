@@ -96,23 +96,72 @@ export const borrowSchema = z.object({
   beforePhotoCount: z.number().int(),
 });
 
+export const usernameSchema = z
+  .string()
+  .trim()
+  .min(3, "Username must be at least 3 characters.")
+  .max(30, "Username must be 30 characters or fewer.")
+  .regex(/^[A-Za-z0-9_.]+$/, "Username can use letters, numbers, underscores, and periods.");
+
+export const departmentCodeSchema = z
+  .string()
+  .trim()
+  .min(2, "Department code must be at least 2 characters.")
+  .max(12, "Department code must be 12 characters or fewer.")
+  .regex(/^[A-Za-z0-9]+$/, "Department code uses letters and numbers.")
+  .transform((value) => value.toUpperCase());
+
+export const departmentSchema = z.object({
+  name: z.string().trim().min(2, "Department name must be at least 2 characters.").max(80, "Department name must be 80 characters or fewer."),
+  code: departmentCodeSchema,
+});
+
+export const departmentUpdateSchema = departmentSchema.extend({
+  id: z.string().min(1),
+  status: z.enum(["active", "inactive"]),
+});
+
+export const roleUpdateSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().trim().min(2, "Role name must be at least 2 characters.").max(80),
+  description: z.string().trim().max(240).optional(),
+});
+
 export const profileSchema = z.object({
   personId: z.string().min(1),
   fullName: z.string().trim().min(2, "Name must be at least 2 characters.").max(120),
   preferredName: z.string().trim().max(80).optional(),
+  positionTitle: z.string().trim().max(80, "Position title must be 80 characters or fewer.").optional(),
+  email: z.string().trim().optional(),
+  username: z.string().trim().optional(),
+  departmentId: z.string().trim().optional(),
 });
 
-export const inviteSchema = z.object({
-  email: z.string().trim().email(),
-  fullName: z.string().trim().min(2),
-  username: z
-    .string()
-    .trim()
-    .min(3, "Username must be at least 3 characters.")
-    .max(30, "Username must be 30 characters or fewer.")
-    .regex(/^[A-Za-z0-9_]+$/, "Username can use letters, numbers, and underscores."),
-  roleKey: z.string().min(1),
-});
+export const inviteSchema = z
+  .object({
+    email: z.string().trim().optional(),
+    fullName: z.string().trim().min(2),
+    username: z.string().trim().optional(),
+    positionTitle: z.string().trim().max(80, "Position title must be 80 characters or fewer.").optional(),
+    roleKey: z.string().min(1),
+    departmentId: z.string().trim().min(1, "Choose a department."),
+  })
+  .superRefine((value, ctx) => {
+    const email = value.email?.trim() ?? "";
+    const username = value.username?.trim() ?? "";
+    if (!email && !username) {
+      ctx.addIssue({ code: "custom", message: "Enter an email or a username.", path: ["email"] });
+    }
+    if (email && !z.string().email().safeParse(email).success) {
+      ctx.addIssue({ code: "custom", message: "Enter a valid email.", path: ["email"] });
+    }
+    if (username) {
+      const parsed = usernameSchema.safeParse(username);
+      if (!parsed.success) {
+        ctx.addIssue({ code: "custom", message: parsed.error.issues[0]?.message ?? "Check the username.", path: ["username"] });
+      }
+    }
+  });
 
 const handoverRefSchema = z.object({
   label: z.string().trim().min(1),

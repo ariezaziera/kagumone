@@ -4,8 +4,9 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { db } from "@/lib/db";
 import { people, personSkills, reportingRelationships, skills, tasks } from "@/lib/db/schema";
-import { deactivatePerson, setLastWorkingDay } from "@/lib/actions/core";
+import { deactivatePerson, deletePerson, setLastWorkingDay } from "@/lib/actions/core";
 import { canEditProfile, getAuthContext, hasPermission } from "@/lib/auth/context";
+import { visibleSignInEmail } from "@/lib/auth/pending-email";
 import { ActionForm } from "@/components/action-form";
 import { PersonAvatar } from "@/components/person-avatar";
 import { ProfileForm } from "@/components/profile-form";
@@ -17,21 +18,26 @@ import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import { inferredLevelLabel } from "@/lib/services/skills";
 import { listPeople } from "@/lib/queries";
 import { ResetPasswordForm } from "../reset-password-form";
+import { loadDepartments } from "@/lib/services/departments";
 
 export default async function TeamMemberPage({ params }: { params: Promise<{ id: string }> }) {
   const ctx = await getAuthContext();
   if (!ctx) redirect("/login");
   const { id } = await params;
   const [person] = await db.select().from(people).where(eq(people.id, id));
-  if (!person || (person.isDemo && (await hideDemoWorkspace()))) notFound();
-  const [assigned, reporting, directRows, personSkillRows, skillRows, directory] = await Promise.all([
+  if (!person || person.organizationalStatus === "deleted" || (person.isDemo && (await hideDemoWorkspace()))) notFound();
+  const [assigned, reporting, directRows, personSkillRows, skillRows, directory, departmentData] = await Promise.all([
     db.select().from(tasks).where(eq(tasks.assigneeId, id)),
     db.select().from(reportingRelationships).where(eq(reportingRelationships.personId, id)),
     db.select().from(reportingRelationships).where(eq(reportingRelationships.superiorId, id)),
     db.select().from(personSkills).where(eq(personSkills.personId, id)),
     db.select().from(skills),
     listPeople(),
+    loadDepartments(),
   ]);
+  const department = departmentData.byPerson.get(person.id) ?? null;
+  const canManage = hasPermission(ctx, "administration:manage");
+  const departmentOptions = departmentData.departments.filter((row) => row.status === "active" || row.id === department?.id);
   const directoryPeople = new Map(directory.map((row) => [row.id, row]));
   const superiors = reporting.filter((row) => row.status === "active");
   const directs = directRows.filter((row) => row.status === "active" && directoryPeople.has(row.personId));
@@ -51,7 +57,7 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
         kicker="Team"
         title={person.fullName}
         artWash="bg-pink-soft"
-        description={`${person.positionTitle ? readableLabel(person.positionTitle) : "No position title"} · ${readableLabel(person.employmentType)}`}
+        description={`${person.positionTitle?.trim() || "No position title"} · ${readableLabel(person.employmentType)}`}
         actions={
           <>
             <Badge tone={statusTone(person.organizationalStatus)}>{person.organizationalStatus}</Badge>
@@ -73,15 +79,19 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
             <dl className="mt-4 grid gap-3 sm:grid-cols-2">
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Email</dt>
-                <dd className="mt-1 break-all text-sm font-semibold">{person.email}</dd>
+                <dd className="mt-1 break-all text-sm font-semibold">{visibleSignInEmail(person.email) ?? "Not set yet"}</dd>
               </div>
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Username</dt>
-                <dd className="mt-1 text-sm font-semibold">{person.username ?? "—"}</dd>
+                <dd className="mt-1 text-sm font-semibold">{person.username ?? "Not set yet"}</dd>
               </div>
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Last working day</dt>
                 <dd className="mt-1 text-sm font-semibold">{formatDate(person.lastWorkingDay)}</dd>
+              </div>
+              <div>
+                <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Department</dt>
+                <dd className="mt-1 text-sm font-semibold">{department?.name ?? "No department"}</dd>
               </div>
               <div>
                 <dt className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Status</dt>
@@ -182,13 +192,20 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
           {editable ? (
             <Card>
               <h2 className="text-base font-bold">Edit profile</h2>
-              <p className="mb-3 mt-1 text-xs leading-relaxed text-secondary">Photo, name, and preferred name. The account owner, someone who manages administration, or a direct superior can save these.</p>
+              <p className="mb-3 mt-1 text-xs leading-relaxed text-secondary">Photo, name, preferred name, and position title. An email or username left blank can be added here. Someone who manages administration can edit the whole profile.</p>
               <ProfileForm
                 person={{
                   id: person.id,
                   fullName: person.fullName,
                   preferredName: person.preferredName,
                   hasPhoto: Boolean(person.photoStorageKey),
+                  email: visibleSignInEmail(person.email),
+                  username: person.username,
+                  positionTitle: person.positionTitle,
+                  canEditSignIn: canManage,
+                  canEditDepartment: canManage,
+                  departmentId: department?.id ?? null,
+                  departments: departmentOptions.map((row) => ({ id: row.id, name: row.name })),
                 }}
               />
             </Card>
@@ -213,12 +230,22 @@ export default async function TeamMemberPage({ params }: { params: Promise<{ id:
           ) : null}
           {canDeactivate ? (
             <Card>
-              <h2 className="text-base font-bold">Deactivate</h2>
-              <p className="mb-3 mt-1 text-xs leading-relaxed text-secondary">The person stays in the directory with an inactive status.</p>
-              <ActionForm action={deactivatePerson} submitLabel="Deactivate account">
-                <input type="hidden" name="personId" value={id} />
-                <Field label="Reason"><Textarea name="reason" /></Field>
-              </ActionForm>
+              <h2 className="text-base font-bold">Deactivate or delete</h2>
+              <p className="mb-3 mt-1 text-xs leading-relaxed text-secondary">Deactivate keeps the person in the directory with an inactive status. Delete removes their sign-in and takes them out of the directory. Tasks and other records stay under their name.</p>
+              {person.organizationalStatus === "active" ? (
+                <ActionForm action={deactivatePerson} submitLabel="Deactivate account">
+                  <input type="hidden" name="personId" value={id} />
+                  <Field label="Reason for deactivating"><Textarea name="reason" /></Field>
+                </ActionForm>
+              ) : (
+                <p className="mb-4 text-sm font-semibold">This account is already inactive.</p>
+              )}
+              <div className="mt-4 border-t border-border pt-4">
+                <ActionForm action={deletePerson} submitLabel="Delete account">
+                  <input type="hidden" name="personId" value={id} />
+                  <Field label="Reason for deleting"><Textarea name="reason" /></Field>
+                </ActionForm>
+              </div>
             </Card>
           ) : null}
         </div>

@@ -51,7 +51,7 @@ function PersonRow({
       <div className="min-w-0">
         <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">{label}</p>
         <p className="truncate text-sm font-semibold text-text">{person?.fullName ?? "Unassigned"}</p>
-        {person?.positionTitle ? <p className="truncate text-xs text-secondary">{readableLabel(person.positionTitle)}</p> : null}
+        {person?.positionTitle ? <p className="truncate text-xs text-secondary">{person.positionTitle}</p> : null}
       </div>
     </div>
   );
@@ -321,7 +321,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               <CompletionNotice
                 taskId={id}
                 ownerId={task.assigneeId}
-                people={peopleRows.map((person) => ({ id: person.id, fullName: person.fullName }))}
+                people={peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => ({ id: person.id, fullName: person.fullName }))}
               />
             </div>
           )}
@@ -402,7 +402,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               <Field label="Person">
                 <Select name="personId">
                   {peopleRows
-                    .filter((person) => person.id !== task.assigneeId)
+                    .filter((person) => person.organizationalStatus !== "deleted" && person.id !== task.assigneeId)
                     .map((person) => (
                       <option key={person.id} value={person.id}>
                         {person.fullName}

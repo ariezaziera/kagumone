@@ -4,9 +4,15 @@ import { useState } from "react";
 import { inviteUser } from "@/lib/actions/core";
 import { Button, Field, Input, Select } from "@/components/ui";
 
-export function CreateMemberForm({ roles }: { roles: { id: string; key: string; name: string }[] }) {
+export function CreateMemberForm({
+  roles,
+  departments,
+}: {
+  roles: { id: string; key: string; name: string }[];
+  departments: { id: string; name: string }[];
+}) {
   const [error, setError] = useState<string | null>(null);
-  const [created, setCreated] = useState<{ fullName: string; email: string; username: string; temporaryPassword: string } | null>(null);
+  const [created, setCreated] = useState<{ fullName: string; email: string | null; username: string | null; temporaryPassword: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
   return (
@@ -28,10 +34,26 @@ export function CreateMemberForm({ roles }: { roles: { id: string; key: string; 
         <Input name="fullName" required />
       </Field>
       <Field label="Email">
-        <Input name="email" type="email" required />
+        <Input name="email" type="email" autoComplete="off" />
       </Field>
       <Field label="Username">
-        <Input name="username" required minLength={3} maxLength={30} autoComplete="off" placeholder="letters, numbers, underscores" />
+        <Input name="username" minLength={3} maxLength={30} autoComplete="off" placeholder="letters, numbers, underscores, periods" />
+      </Field>
+      <Field label="Position title">
+        <Input name="positionTitle" maxLength={80} placeholder="Type the title" />
+      </Field>
+      <p className="text-xs text-secondary">Enter an email, a username, or both. The one left blank can be added later on the profile.</p>
+      <Field label="Department">
+        <Select name="departmentId" required defaultValue="">
+          <option value="" disabled>
+            Choose a department
+          </option>
+          {departments.map((department) => (
+            <option key={department.id} value={department.id}>
+              {department.name}
+            </option>
+          ))}
+        </Select>
       </Field>
       <Field label="Role">
         <Select name="roleKey" required defaultValue="">
@@ -50,15 +72,15 @@ export function CreateMemberForm({ roles }: { roles: { id: string; key: string; 
       {created ? (
         <div className="rounded-xl border border-border bg-canvas p-3 text-sm">
           <p className="font-medium">Account ready for {created.fullName}</p>
-          <p className="mt-2 text-secondary">Shown once. They sign in with the email or the username, then must replace this password.</p>
+          <p className="mt-2 text-secondary">Shown once. They sign in with the email or the username that was set, then must replace this password.</p>
           <dl className="mt-3 space-y-1">
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Email</dt>
-              <dd>{created.email}</dd>
+              <dd>{created.email ?? "Not set yet"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Username</dt>
-              <dd>{created.username}</dd>
+              <dd>{created.username ?? "Not set yet"}</dd>
             </div>
             <div>
               <dt className="text-xs uppercase tracking-wide text-secondary">Temporary password</dt>
@@ -71,7 +93,7 @@ export function CreateMemberForm({ roles }: { roles: { id: string; key: string; 
             variant="secondary"
             onClick={async () => {
               await navigator.clipboard.writeText(
-                `Email: ${created.email}\nUsername: ${created.username}\nTemporary password: ${created.temporaryPassword}`,
+                `Email: ${created.email ?? "Not set yet"}\nUsername: ${created.username ?? "Not set yet"}\nTemporary password: ${created.temporaryPassword}`,
               );
               setCopied(true);
             }}

@@ -142,7 +142,7 @@ export default async function KpiPage({ searchParams }: { searchParams: Promise<
             <ActionForm action={upsertKpiTarget} submitLabel="Save KPI target">
               <Field label="Person">
                 <Select name="personId" required>
-                  {peopleRows.map((person) => (
+                  {peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => (
                     <option key={person.id} value={person.id}>{person.fullName}</option>
                   ))}
                 </Select>

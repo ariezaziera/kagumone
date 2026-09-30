@@ -28,6 +28,10 @@ async function demoGate() {
   return demoPersonIds();
 }
 
+export function isDirectoryPerson(person: { organizationalStatus: string }) {
+  return person.organizationalStatus !== "deleted";
+}
+
 export async function listPeople() {
   const rows = await db.select().from(people);
   const demoIds = await demoGate();

@@ -164,7 +164,7 @@ export default async function ProjectDetailPage({ params }: { params: Promise<{ 
               <ActionForm action={addProjectMember} submitLabel="Add member">
                 <input type="hidden" name="projectId" value={id} />
                 <Select name="personId">
-                  {peopleRows.map((person) => (
+                  {peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => (
                     <option key={person.id} value={person.id}>{person.fullName}</option>
                   ))}
                 </Select>

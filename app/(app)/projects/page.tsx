@@ -105,7 +105,7 @@ export default async function ProjectsPage({ searchParams }: { searchParams: Pro
             </Field>
             <Field label="Owner">
               <Select name="ownerId" defaultValue={ctx.person.id}>
-                {peopleRows.map((person) => (
+                {peopleRows.filter((person) => person.organizationalStatus !== "deleted").map((person) => (
                   <option key={person.id} value={person.id}>
                     {person.fullName}
                   </option>

@@ -3,6 +3,12 @@
 import { useState } from "react";
 import { Button } from "@/components/ui";
 
+function isNavigationError(error: unknown) {
+  if (typeof error !== "object" || error === null || !("digest" in error)) return false;
+  const digest = String((error as { digest?: unknown }).digest);
+  return digest.startsWith("NEXT_REDIRECT") || digest.startsWith("NEXT_NOT_FOUND");
+}
+
 export function ActionForm({
   action,
   children,
@@ -24,6 +30,7 @@ export function ActionForm({
           await action(form);
           setOk(true);
         } catch (err) {
+          if (isNavigationError(err)) throw err;
           setError(err instanceof Error ? err.message : "Something went wrong.");
         }
       }}
