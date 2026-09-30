@@ -2,7 +2,9 @@ import { headers } from "next/headers";
 import { eq, and, inArray } from "drizzle-orm";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { people, personRoles, rolePermissions, permissions, reportingRelationships } from "@/lib/db/schema";
+import { people, personRoles, rolePermissions, permissions, reportingRelationships, session as sessionTable } from "@/lib/db/schema";
+import { BROWSER_IDLE_MS, REMEMBER_MAX_MS, isShortSessionCookie } from "@/lib/auth/session-policy";
+import { now } from "@/lib/utils";
 import type { Permission } from "@/lib/permissions";
 
 export type AuthContext = {
@@ -17,8 +19,20 @@ export type AuthContext = {
 };
 
 export async function getAuthContext(): Promise<AuthContext | null> {
-  const session = await auth.api.getSession({ headers: await headers() });
+  const headerList = await headers();
+  const session = await auth.api.getSession({ headers: headerList });
   if (!session?.user) return null;
+  const createdAt = new Date(session.session.createdAt);
+  if (!isShortSessionCookie(headerList.get("cookie")) && Date.now() - createdAt.getTime() > REMEMBER_MAX_MS) {
+    await auth.api.signOut({ headers: headerList });
+    return null;
+  }
+  if (isShortSessionCookie(headerList.get("cookie"))) {
+    await db
+      .update(sessionTable)
+      .set({ expiresAt: new Date(Date.now() + BROWSER_IDLE_MS), updatedAt: now() })
+      .where(eq(sessionTable.token, session.session.token));
+  }
   const person = await db.query.people.findFirst({
     where: eq(people.userId, session.user.id),
   });

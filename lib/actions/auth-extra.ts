@@ -2,7 +2,7 @@
 
 import { headers } from "next/headers";
 import { revalidatePath } from "next/cache";
-import { and, eq } from "drizzle-orm";
+import { and, desc, eq } from "drizzle-orm";
 import { hashPassword } from "better-auth/crypto";
 import { db } from "@/lib/db";
 import { account, invitations, people, session } from "@/lib/db/schema";
@@ -15,6 +15,7 @@ import { temporaryPassword } from "@/lib/auth/temporary-password";
 import { hideDemoWorkspace } from "@/lib/services/demo-scope";
 import { listActivity, listContents, listKnowledge, listPeople, listProjects, listTasks } from "@/lib/queries";
 import { visibleSignInEmail } from "@/lib/auth/pending-email";
+import { BROWSER_IDLE_MS } from "@/lib/auth/session-policy";
 import { createSignupAuth } from "@/lib/auth/signup";
 
 export async function signInWithIdentifier(input: { identifier: string; password: string; remember: boolean }) {
@@ -37,9 +38,23 @@ export async function signInWithIdentifier(input: { identifier: string; password
     return { error: "Unable to sign in." };
   }
   const [person] = await db
-    .select({ mustChangePassword: people.mustChangePassword })
+    .select({ mustChangePassword: people.mustChangePassword, userId: people.userId })
     .from(people)
     .where(identifier.includes("@") ? eq(people.email, identifier.toLowerCase()) : eq(people.username, identifier.toLowerCase()));
+  if (!input.remember && person?.userId) {
+    const [latest] = await db
+      .select({ id: session.id })
+      .from(session)
+      .where(eq(session.userId, person.userId))
+      .orderBy(desc(session.createdAt))
+      .limit(1);
+    if (latest) {
+      await db
+        .update(session)
+        .set({ expiresAt: new Date(Date.now() + BROWSER_IDLE_MS), updatedAt: now() })
+        .where(eq(session.id, latest.id));
+    }
+  }
   return { mustChangePassword: Boolean(person?.mustChangePassword) };
 }
 

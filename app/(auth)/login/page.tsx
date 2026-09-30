@@ -47,6 +47,8 @@ function LoginForm() {
       <label className="flex items-center gap-2 text-sm text-secondary">
         <input type="checkbox" {...form.register("remember")} /> Remember me
       </label>
+      <p className="text-xs leading-relaxed text-secondary">Without Remember me, the session ends after 30 minutes away or when the browser closes. With it, the session ends after 8 hours away.</p>
+      {params.get("ended") === "1" ? <p className="text-sm text-secondary">Your session ended. Sign in again.</p> : null}
       {error ? <p className="text-sm text-error">{error}</p> : null}
       <Button className="w-full" type="submit" disabled={form.formState.isSubmitting}>
         Log in
